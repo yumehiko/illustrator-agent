@@ -31,6 +31,16 @@ uv run ruff check .
 
 利用例は`examples/`、設計と完成条件は[design model](docs/design-model.md)、未完了作業は[roadmap](docs/roadmap.md)を参照してください。
 
+## M1 reference production
+
+`quarterly_kpi_report`を、明示的なJSON入力からAI、IR、preview、検証reportまで再生成します。`--illustrator`を付けると、実機構造検査、native化、再オープン編集性検査も続けて実行します。
+
+```bash
+uv run python examples/quarterly_kpi_report.py --illustrator
+```
+
+成果物は`build/m1/`へ出力します。同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。
+
 ## ライセンス
 
 [MIT License](LICENSE)です。

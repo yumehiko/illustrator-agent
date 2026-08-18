@@ -1,0 +1,31 @@
+{
+  "period": "NORTH REGION / Q2 2026",
+  "title": "Quarterly performance",
+  "metrics": [
+    {
+      "label": "Revenue",
+      "value": "$1.42M",
+      "change": "+18.4%",
+      "positive": true
+    },
+    {
+      "label": "Gross margin",
+      "value": "42.8%",
+      "change": "+3.1 pt",
+      "positive": true
+    },
+    {
+      "label": "Retention",
+      "value": "76.2%",
+      "change": "-1.4 pt",
+      "positive": false
+    }
+  ],
+  "chart": {
+    "labels": ["APR", "MAY", "JUN", "JUL", "AUG", "SEP"],
+    "values": [72, 84, 79, 96, 108, 112],
+    "target": 100
+  },
+  "source": "internal sales and customer operations data",
+  "refreshed": "2026-09-30"
+}

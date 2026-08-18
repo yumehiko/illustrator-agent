@@ -1,9 +1,12 @@
-"""Build an editable quarterly KPI report with native Illustrator stroke styles."""
+"""M1 reference production: an editable, data-driven quarterly KPI report."""
 
+import argparse
+import json
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-
-from py_ai_illustrator.legacy import dump_ai7
+from typing import Any
 
 from illustrator_agent import (
     Color,
@@ -16,6 +19,7 @@ from illustrator_agent import (
     polyline_path,
     rectangle_path,
 )
+from illustrator_agent.production import ProductionContract, run_reference_production
 
 INK = Color(0.06, 0.1, 0.18)
 BLUE = Color(0.1, 0.38, 0.78)
@@ -23,6 +27,9 @@ CORAL = Color(0.92, 0.3, 0.22)
 MUTED = Color(0.4, 0.44, 0.52)
 GRID = Color(0.78, 0.8, 0.84)
 PAPER = Color(0.965, 0.96, 0.94)
+HERE = Path(__file__).resolve().parent
+DEFAULT_INPUT = HERE / "quarterly-kpi-report.json"
+DEFAULT_OUTPUT = HERE.parent / "build" / "m1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +38,111 @@ class Metric:
     value: str
     change: str
     positive: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class ChartInput:
+    labels: tuple[str, ...]
+    values: tuple[float, ...]
+    target: float
+
+
+@dataclass(frozen=True, slots=True)
+class ReportInput:
+    period: str
+    title: str
+    metrics: tuple[Metric, ...]
+    chart: ChartInput
+    source: str
+    refreshed: str
+
+    def __post_init__(self) -> None:
+        if not all((self.period, self.title, self.source, self.refreshed)):
+            raise ValueError("Report text fields must not be empty")
+        if len(self.metrics) != 3:
+            raise ValueError("The M1 report layout requires exactly three metrics")
+        if any(
+            not metric.label or not metric.value or not metric.change
+            for metric in self.metrics
+        ):
+            raise ValueError("Metric label, value, and change must not be empty")
+        if len(self.chart.labels) != len(self.chart.values) or len(self.chart.values) < 2:
+            raise ValueError("Chart labels and values must match and contain at least two points")
+        if any(not label for label in self.chart.labels):
+            raise ValueError("Chart labels must not be empty")
+        if not all(math.isfinite(value) for value in (*self.chart.values, self.chart.target)):
+            raise ValueError("Chart values and target must be finite")
+
+
+def _mapping(value: Any, *, name: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be an object")
+    return value
+
+
+def _sequence(value: Any, *, name: str) -> Sequence[Any]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise ValueError(f"{name} must be an array")
+    return value
+
+
+def _string(value: Any, *, name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _number(value: Any, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a number")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    return result
+
+
+def _boolean(value: Any, *, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{name} must be a boolean")
+    return value
+
+
+def load_report_input(path: str | Path = DEFAULT_INPUT) -> ReportInput:
+    """Load and validate the explicit input used by the M1 production."""
+
+    source = Path(path)
+    raw = _mapping(json.loads(source.read_text(encoding="utf-8")), name="report input")
+    metrics = tuple(
+        Metric(
+            label=_string(item.get("label"), name="metric.label"),
+            value=_string(item.get("value"), name="metric.value"),
+            change=_string(item.get("change"), name="metric.change"),
+            positive=_boolean(item.get("positive", True), name="metric.positive"),
+        )
+        for value in _sequence(raw.get("metrics"), name="metrics")
+        for item in [_mapping(value, name="metric")]
+    )
+    chart = _mapping(raw.get("chart"), name="chart")
+    labels = tuple(
+        _string(value, name="chart label")
+        for value in _sequence(chart.get("labels"), name="chart.labels")
+    )
+    values = tuple(
+        _number(value, name="chart value")
+        for value in _sequence(chart.get("values"), name="chart.values")
+    )
+    return ReportInput(
+        period=_string(raw.get("period"), name="period"),
+        title=_string(raw.get("title"), name="title"),
+        metrics=metrics,
+        chart=ChartInput(
+            labels=labels,
+            values=values,
+            target=_number(chart.get("target"), name="chart.target"),
+        ),
+        source=_string(raw.get("source"), name="source"),
+        refreshed=_string(raw.get("refreshed"), name="refreshed"),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,8 +229,11 @@ class LineChart:
             raise ValueError("LineChart requires matching labels and at least two values")
         if not self.minimum < self.maximum:
             raise ValueError("LineChart maximum must be greater than minimum")
-        if any(value < self.minimum or value > self.maximum for value in self.values):
-            raise ValueError("LineChart value falls outside the configured scale")
+        if any(
+            value < self.minimum or value > self.maximum
+            for value in (*self.values, self.target)
+        ):
+            raise ValueError("LineChart value or target falls outside the configured scale")
 
     def _y(self, value: float, *, top: float) -> float:
         ratio = (value - self.minimum) / (self.maximum - self.minimum)
@@ -219,7 +334,8 @@ class LineChart:
         )
 
 
-def build_document() -> Document:
+def build_document(report: ReportInput | None = None) -> Document:
+    report = report or load_report_input()
     builder = LayerBuilder(id="quarterly-report", name="Quarterly KPI report")
     builder.add_path(
         rectangle_path(
@@ -236,7 +352,7 @@ def build_document() -> Document:
         TextBlock(
             id="report.eyebrow",
             name="Report period",
-            text="NORTH REGION / Q2 2026",
+            text=report.period,
             width=536,
             alignment="right",
             wrap=False,
@@ -247,19 +363,16 @@ def build_document() -> Document:
         TextBlock(
             id="report.title",
             name="Report title",
-            text="Quarterly performance",
+            text=report.title,
             width=536,
             wrap=False,
             style=TextStyle(font_size=24, font_name="Helvetica-Bold", fill=INK),
         ).render(x=38, top=377)
     )
 
-    metrics = (
-        Metric("Revenue", "$1.42M", "+18.4%"),
-        Metric("Gross margin", "42.8%", "+3.1 pt"),
-        Metric("Retention", "76.2%", "-1.4 pt", positive=False),
-    )
-    for index, (metric, x) in enumerate(zip(metrics, (38, 224, 410), strict=True), start=1):
+    for index, (metric, x) in enumerate(
+        zip(report.metrics, (38, 224, 410), strict=True), start=1
+    ):
         card = MetricCard(id=f"metric-{index}", metric=metric)
         builder.add_grouped(
             card.render(x=x, top=332),
@@ -303,9 +416,9 @@ def build_document() -> Document:
     )
     chart = LineChart(
         id="operating-index",
-        labels=("APR", "MAY", "JUN", "JUL", "AUG", "SEP"),
-        values=(72, 84, 79, 96, 108, 112),
-        target=100,
+        labels=report.chart.labels,
+        values=report.chart.values,
+        target=report.chart.target,
     )
     builder.add_grouped(
         chart.render(x=94, top=195),
@@ -316,7 +429,7 @@ def build_document() -> Document:
         TextBlock(
             id="report.source",
             name="Data source",
-            text="Source: internal sales and customer operations data / refreshed 2026-09-30",
+            text=f"Source: {report.source} / refreshed {report.refreshed}",
             width=536,
             alignment="right",
             wrap=False,
@@ -336,5 +449,75 @@ def build_document() -> Document:
     )
 
 
+M1_CONTRACT = ProductionContract(
+    production_id="quarterly-kpi-report",
+    width=612,
+    height=420,
+    layer_names=("Quarterly KPI report",),
+    path_count=17,
+    text_count=24,
+    group_count=4,
+    required_ids=(
+        "quarterly-report",
+        "metric-1.group",
+        "metric-2.group",
+        "metric-3.group",
+        "operating-index.group",
+        "operating-index.actual",
+        "operating-index.target",
+        "report.title.line-0",
+    ),
+    required_group_names=(
+        "Metric: Revenue",
+        "Metric: Gross margin",
+        "Metric: Retention",
+        "Operating index chart",
+    ),
+    visual_acceptance=(
+        "タイトル、3つのKPIカード、折れ線チャート、出典が見切れず読める",
+        "見出し、KPI値、chartのvisual hierarchyと余白が意図どおりである",
+        "actual、target、gridの線種・色・重なり順が意図どおりである",
+    ),
+)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--illustrator",
+        action="store_true",
+        help="run Illustrator structure, native materialization, and reopen checks",
+    )
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--accept-visual-by",
+        help="record the human who approved the generated native preview",
+    )
+    parser.add_argument("--timeout", type=float, default=120.0)
+    args = parser.parse_args(argv)
+    report_input = load_report_input(args.input)
+    result = run_reference_production(
+        lambda: build_document(report_input),
+        source=__file__,
+        input_data=args.input,
+        output_directory=args.output_dir,
+        contract=M1_CONTRACT,
+        include_illustrator=args.illustrator,
+        visual_accepted_by=args.accept_visual_by,
+        force=args.force,
+        timeout=args.timeout,
+    )
+    print(
+        json.dumps(
+            {"status": result["status"], "report": result["report_path"]},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0 if result["status"] == "passed" or result["status"].startswith("awaiting-") else 1
+
+
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("quarterly-kpi-report.ai"))
+    raise SystemExit(main())

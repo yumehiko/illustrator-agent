@@ -4,19 +4,7 @@
 
 ## 現在地
 
-リポジトリ分離直後です。第2層のauthoring APIと制作example、第3層skillの骨格はありますが、このリポジトリ内でend-to-endの完成判定と構成がまだ統一されていません。
-
-## M1: reference production
-
-代表制作物を1つ選び、Python sourceと入力から次を一続きで再現します。
-
-- graphic IRと`.ai`の生成
-- 第一層validation、semantic検査、preview
-- 必要なnative materialization
-- Illustrator実機での構造・編集性確認
-- 人間によるvisual acceptance
-
-この制作で見つかった不足だけを、第2層の実装またはfixture付きの第1層要求へ振り分けます。
+M1 reference productionは完了しました。`quarterly_kpi_report`で、明示的入力から生成、第一層検証、preview、native materialization、Illustrator実機検査、human visual acceptanceまで一続きの完成判定を通しています。
 
 ## M2: デザインモデルの拡張
 
