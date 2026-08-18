@@ -30,7 +30,5 @@ Create structured, editable Illustrator artwork through the public APIs of this 
 
 Read these only as needed:
 
-- `references/repository-map.md` for package and document locations.
-- `../../docs/design-model.md` for the component render contract.
-- `../../docs/architecture.md` for source-of-truth and dependency boundaries.
+- `../../docs/design-model.md` for the render contract and dependency boundary.
 - `../../examples/` for working production-style components.

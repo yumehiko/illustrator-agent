@@ -4,16 +4,38 @@
 
 ## 現在地
 
-第2層のcomponent authoring MVPと、第3層の`edit-illustrator` skill骨格があります。リポジトリ分離後は、実際の制作依頼を通してworkflowと不足componentを追加します。
+リポジトリ分離直後です。第2層のauthoring APIと制作example、第3層skillの骨格はありますが、このリポジトリ内でend-to-endの完成判定と構成がまだ統一されていません。
 
-## 次の候補
+## M1: reference production
 
-1. skillの最初のend-to-end制作セッション
-2. inspect / plan / generate-or-patch / validate / previewの標準workflow
-3. image contain / cover / clipping crop
-4. missing / modified link診断と安全な再link
-5. component identityとsidecar semantic manifest
-6. font / color / spacing / document contextの共有theme
-7. page分割、複合layout、overflow / missing font検証
+代表制作物を1つ選び、Python sourceと入力から次を一続きで再現します。
 
-優先順位は網羅性ではなく、具体的な制作要求と再利用価値で決めます。第1層の不足はskill内で迂回せず、fixtureと検証条件を持つ要求として`py-ai-illustrator`へ返します。
+- graphic IRと`.ai`の生成
+- 第一層validation、semantic検査、preview
+- 必要なnative materialization
+- Illustrator実機での構造・編集性確認
+- 人間によるvisual acceptance
+
+この制作で見つかった不足だけを、第2層の実装またはfixture付きの第1層要求へ振り分けます。
+
+## M2: デザインモデルの拡張
+
+reference productionで必要になった順に、document context / theme、入力validation、layout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
+
+## M3: 一般性の確認
+
+日本語文字組み、データ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
+
+## M4: 第3層
+
+第2層のAPIと判断基準が安定した後、制作手順を`edit-illustrator` skillへまとめます。
+
+## リポジトリ整理
+
+M1と並行して必要なものから行います。
+
+- public APIとmodule構成の整理
+- exampleの役割分類、重複削減、生成物の保存方針
+- component unit testとend-to-end testの分離
+- 生成・検証コマンドの統一とCI範囲の決定
+- 第3層skill骨格の凍結または縮小
