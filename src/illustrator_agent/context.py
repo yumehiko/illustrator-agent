@@ -6,7 +6,7 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Literal, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 from py_ai_illustrator.model import (
     Artboard,
@@ -17,7 +17,7 @@ from py_ai_illustrator.model import (
     ProcessColor,
 )
 
-from .authoring import TextStyle
+from .typography import TextStyle
 
 _T = TypeVar("_T")
 
@@ -133,7 +133,7 @@ class DocumentContext:
     title: str
     theme: DesignTheme
     metadata: Mapping[str, Any] = field(default_factory=dict)
-    unit: Literal["pt"] = "pt"
+    unit: ClassVar[Literal["pt"]] = "pt"
 
     def __post_init__(self) -> None:
         if not all(math.isfinite(value) and value > 0 for value in (self.width, self.height)):
@@ -144,8 +144,6 @@ class DocumentContext:
             )
         if not isinstance(self.theme, DesignTheme):
             raise TypeError("Document context theme must be a DesignTheme")
-        if self.unit != "pt":
-            raise ValueError("Document context currently supports point units only")
         object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
 
     def create_document(

@@ -1,13 +1,17 @@
 import pytest
 from py_ai_illustrator.model import Color, Layer
 
-from illustrator_agent import DesignTheme, DocumentContext, TextStyle
+from illustrator_agent import DesignTheme, DocumentContext, FontSpec, TextStyle
 
 
 def test_design_theme_copies_roles_and_resolves_required_values() -> None:
     source_colors = {"ink": Color(0.1, 0.2, 0.3)}
     source_styles = {
-        "heading": TextStyle(font_size=24, font_name="Helvetica-Bold", fill=source_colors["ink"])
+        "heading": TextStyle(
+            font_size=24,
+            font=FontSpec("Helvetica-Bold"),
+            fill=source_colors["ink"],
+        )
     }
 
     theme = DesignTheme(colors=source_colors, text_styles=source_styles)
@@ -63,7 +67,6 @@ def test_document_context_creates_an_isolated_document() -> None:
         ({"title": ""}, ValueError, "title must not be empty"),
         ({"title": " Untitled"}, ValueError, "title must not be empty"),
         ({"theme": object()}, TypeError, "theme must be a DesignTheme"),
-        ({"unit": "px"}, ValueError, "point units only"),
         ({"metadata": {"": "value"}}, ValueError, "metadata keys"),
         ({"metadata": {"value": float("nan")}}, ValueError, "numbers must be finite"),
         ({"metadata": {"value": object()}}, TypeError, "non-JSON value"),

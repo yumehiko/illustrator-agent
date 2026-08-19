@@ -3,7 +3,7 @@
 from dataclasses import replace
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import Color, Document, Table, TableColumn, TableStyle
 
@@ -77,4 +77,7 @@ def build_document() -> Document:
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("styled-table.ai"))
+    output = Path(__file__).with_name("styled-table.native.ai")
+    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
+    if result["status"] != "passed":
+        raise RuntimeError(result)

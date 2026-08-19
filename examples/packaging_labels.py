@@ -3,12 +3,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
     AffineTransform,
     Color,
     Document,
+    FontSpec,
     LayerBuilder,
     RenderedComponent,
     TextBlock,
@@ -105,7 +106,7 @@ class PackagingLabel:
                 width=self.width - 24,
                 alignment="center",
                 wrap=False,
-                style=TextStyle(font_size=20, font_name="Helvetica-Bold", fill=INK),
+                style=TextStyle(font_size=20, font=FontSpec("Helvetica-Bold"), fill=INK),
             ).render(x=x + 12, top=top - 164)
         )
         builder.add(
@@ -125,7 +126,7 @@ class PackagingLabel:
                 width=self.width - 36,
                 alignment="right",
                 wrap=False,
-                style=TextStyle(font_size=9, font_name="Helvetica-Bold", fill=INK),
+                style=TextStyle(font_size=9, font=FontSpec("Helvetica-Bold"), fill=INK),
             ).render(x=x + 18, top=top - 278)
         )
         builder.add(
@@ -163,7 +164,7 @@ class PackagingLabel:
                     wrap=False,
                     style=TextStyle(
                         font_size=8,
-                        font_name="Helvetica-Bold",
+                        font=FontSpec("Helvetica-Bold"),
                         tracking=80,
                         fill=WHITE,
                     ),
@@ -251,4 +252,7 @@ def build_document() -> Document:
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("packaging-labels.ai"))
+    output = Path(__file__).with_name("packaging-labels.native.ai")
+    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
+    if result["status"] != "passed":
+        raise RuntimeError(result)

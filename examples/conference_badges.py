@@ -3,11 +3,12 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
     Color,
     Document,
+    FontSpec,
     LayerBuilder,
     RenderedComponent,
     TextBlock,
@@ -96,7 +97,7 @@ class ConferenceBadge:
                 text=self.attendee.name,
                 width=164,
                 wrap=False,
-                style=TextStyle(font_size=17, font_name="Helvetica-Bold"),
+                style=TextStyle(font_size=17, font=FontSpec("Helvetica-Bold")),
             ).render(x=x + 76, top=top - 38)
         )
         builder.add(
@@ -127,7 +128,11 @@ class ConferenceBadge:
                 width=78,
                 alignment="center",
                 wrap=False,
-                style=TextStyle(font_size=9, font_name="Helvetica-Bold", fill=Color(1, 1, 1)),
+                style=TextStyle(
+                    font_size=9,
+                    font=FontSpec("Helvetica-Bold"),
+                    fill=Color(1, 1, 1),
+                ),
             ).render(x=x + 76, top=top - 97)
         )
         builder.add(
@@ -176,4 +181,7 @@ def build_document() -> Document:
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("conference-badges.ai"))
+    output = Path(__file__).with_name("conference-badges.native.ai")
+    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
+    if result["status"] != "passed":
+        raise RuntimeError(result)
