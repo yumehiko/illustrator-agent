@@ -4,7 +4,9 @@
 
 人間またはCodexが、意味と再生成規則を持つPythonデザインオブジェクトを書き、決定的に編集可能な`.ai`へ変換し、Illustrator上で意図した見た目・構造・編集性を確認できる状態にします。
 
-第2層はcomponent、template、variant、layout、theme、入力validation、stable identityを所有し、第一層のgraphic IRへrenderします。`.ai`のparser、writer、低水準IR、検証は`py-ai-illustrator`へ委譲します。依存方向は`illustrator-agent -> py-ai-illustrator`だけです。
+第2層はcomponent、template、variant、layout、theme、入力validation、stable identityを所有し、第一層のgraphic IRへrenderします。`.ai`のparser、writer、低水準IR、検証は`py-ai-illustrator`へ委譲します。依存方向は`illustrator-agent -> py-ai-illustrator`だけです。新規制作の正式経路は`Document IR -> compile_native_ai -> PDF-compatible native AI -> reopen検証`であり、legacy AIを中間生成物、oracle、production gateにしません。
+
+`DocumentContext`はcanvas、内部表現がpointであること、title、metadata、`DesignTheme`を明示します。`unit == "pt"`は利用者の入力単位を制限する製品要件ではなく、IRへ渡す座標の宣言です。themeは色と文字styleをnamed roleで解決し、componentが要求するroleの欠落を既定値で補わず拒否します。
 
 ## Source of truth
 
@@ -18,6 +20,10 @@
 4. render後は第一層のcompatibility / semantic / visual validationを通す。
 5. flatten、outline、font置換等の損失を黙って行わない。
 6. textを含む非rigid transform等、意味が未定義な操作は拒否する。
+
+制約は製品要件、第1層IR/backendの現在の能力限界、determinism・editability・fail-closed等の安全性保証へ分類します。現在の文字幅計算はfont engineを使わない決定的な近似であり、正確なoverflow保証ではありません。text/imageの非rigid transform拒否も現行IR/backendの能力限界で、恒久的な製品制約ではありません。
+
+pure gateは`Document`生成、JSON往復、determinism、production contractをIllustratorなしで検証します。native compile、保存・再open後のsemantic/editability、PDF preview、visual acceptanceはIllustrator実機gateとして分離します。
 
 ## 完成条件
 

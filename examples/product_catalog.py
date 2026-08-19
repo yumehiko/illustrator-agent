@@ -6,11 +6,12 @@ import struct
 import zlib
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
 from py_ai_illustrator.model import Color, Document, LinkedImage
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
     AreaTextBlock,
+    FontSpec,
     LayerBuilder,
     TextBlock,
     TextStyle,
@@ -97,7 +98,11 @@ def build_document() -> Document:
             width=56,
             alignment="center",
             wrap=False,
-            style=TextStyle(font_size=12, font_name="Helvetica-Bold", fill=Color(1, 1, 1)),
+            style=TextStyle(
+                font_size=12,
+                font=FontSpec("Helvetica-Bold"),
+                fill=Color(1, 1, 1),
+            ),
         ).render(x=294, top=326)
     )
     builder.add(
@@ -109,7 +114,7 @@ def build_document() -> Document:
             wrap=False,
             style=TextStyle(
                 font_size=10,
-                font_name="Helvetica-Bold",
+                font=FontSpec("Helvetica-Bold"),
                 tracking=140,
                 fill=Color(0.23, 0.39, 0.75),
             ),
@@ -122,7 +127,11 @@ def build_document() -> Document:
             text="Focus Lamp 02",
             width=280,
             wrap=False,
-            style=TextStyle(font_size=30, font_name="Helvetica-Bold", fill=Color(0.08, 0.1, 0.16)),
+            style=TextStyle(
+                font_size=30,
+                font=FontSpec("Helvetica-Bold"),
+                fill=Color(0.08, 0.1, 0.16),
+            ),
         ).render(x=384, top=310)
     )
     builder.add(
@@ -135,7 +144,11 @@ def build_document() -> Document:
             ),
             width=264,
             height=104,
-            style=TextStyle(font_size=11, font_name="Helvetica", line_height_ratio=1.45),
+            style=TextStyle(
+                font_size=11,
+                font=FontSpec("Helvetica"),
+                line_height_ratio=1.45,
+            ),
         ).render(x=384, top=260)
     )
     builder.add_path(
@@ -157,7 +170,11 @@ def build_document() -> Document:
             width=118,
             alignment="center",
             wrap=False,
-            style=TextStyle(font_size=10, font_name="Helvetica-Bold", fill=Color(1, 1, 1)),
+            style=TextStyle(
+                font_size=10,
+                font=FontSpec("Helvetica-Bold"),
+                fill=Color(1, 1, 1),
+            ),
         ).render(x=396, top=104)
     )
     return Document(
@@ -174,4 +191,8 @@ def build_document() -> Document:
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), ROOT / "product-catalog.ai")
+    result = compile_native_ai(
+        build_document(), ROOT / "product-catalog.native.ai", source_base=ROOT
+    )
+    if result["status"] != "passed":
+        raise RuntimeError(result)

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
     Color,
@@ -19,7 +19,6 @@ JAPANESE_FONT = FontSpec(
     postscript_name="KozGoPr6N-Regular",
     family="小塚ゴシック Pr6N",
     style="R",
-    legacy_name="_KozGoPr6N-Regular-83pv-RKSJ-H",
 )
 
 
@@ -72,7 +71,7 @@ def build_document() -> Document:
             wrap=False,
             style=TextStyle(
                 font_size=11,
-                font_name="Helvetica-Bold",
+                font=FontSpec("Helvetica-Bold"),
                 tracking=160,
                 fill=navy,
             ),
@@ -162,7 +161,7 @@ def build_document() -> Document:
             width=270,
             alignment="right",
             wrap=False,
-            style=TextStyle(font_size=10, font_name="Helvetica", fill=navy),
+            style=TextStyle(font_size=10, font=FontSpec("Helvetica"), fill=navy),
         ).render(x=240, top=74)
     )
     return Document(
@@ -172,11 +171,14 @@ def build_document() -> Document:
         metadata={
             "source": "examples/event_poster.py",
             "component": "EventPoster",
-            "encoding": "cp932",
+            "font": JAPANESE_FONT.postscript_name,
         },
         layers=[builder.build()],
     )
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("event-poster.ai"))
+    output = Path(__file__).with_name("event-poster.native.ai")
+    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
+    if result["status"] != "passed":
+        raise RuntimeError(result)

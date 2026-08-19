@@ -3,12 +3,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from py_ai_illustrator.legacy import dump_ai7
+from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
     Artboard,
     Color,
     Document,
+    FontSpec,
     LayerBuilder,
     RenderedComponent,
     TextBlock,
@@ -102,7 +103,7 @@ class CampaignVariant:
                 wrap=False,
                 style=TextStyle(
                     font_size=9,
-                    font_name="Helvetica-Bold",
+                    font=FontSpec("Helvetica-Bold"),
                     tracking=160,
                     fill=lime,
                 ),
@@ -117,7 +118,7 @@ class CampaignVariant:
                 wrap=False,
                 style=TextStyle(
                     font_size=title_size,
-                    font_name="Helvetica-Bold",
+                    font=FontSpec("Helvetica-Bold"),
                     line_height_ratio=0.98,
                     fill=white,
                 ),
@@ -132,7 +133,7 @@ class CampaignVariant:
                 wrap=spec.layout != "banner",
                 style=TextStyle(
                     font_size=11,
-                    font_name="Helvetica",
+                    font=FontSpec("Helvetica"),
                     line_height_ratio=1.35,
                     fill=muted,
                 ),
@@ -159,7 +160,7 @@ class CampaignVariant:
                 wrap=False,
                 style=TextStyle(
                     font_size=11,
-                    font_name="Helvetica-Bold",
+                    font=FontSpec("Helvetica-Bold"),
                     tracking=70,
                     fill=navy,
                 ),
@@ -175,7 +176,7 @@ class CampaignVariant:
                 wrap=False,
                 style=TextStyle(
                     font_size=8,
-                    font_name="Helvetica-Bold",
+                    font=FontSpec("Helvetica-Bold"),
                     tracking=120,
                     fill=muted,
                 ),
@@ -236,4 +237,7 @@ def build_document() -> Document:
 
 
 if __name__ == "__main__":
-    dump_ai7(build_document(), Path(__file__).with_name("campaign-variants.ai"))
+    output = Path(__file__).with_name("campaign-variants.native.ai")
+    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
+    if result["status"] != "passed":
+        raise RuntimeError(result)
