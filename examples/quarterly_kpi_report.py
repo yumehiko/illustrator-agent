@@ -10,7 +10,9 @@ from typing import Any
 
 from illustrator_agent import (
     Color,
+    DesignTheme,
     Document,
+    DocumentContext,
     LayerBuilder,
     RenderedComponent,
     TextBlock,
@@ -21,15 +23,84 @@ from illustrator_agent import (
 )
 from illustrator_agent.production import ProductionContract, run_reference_production
 
-INK = Color(0.06, 0.1, 0.18)
-BLUE = Color(0.1, 0.38, 0.78)
-CORAL = Color(0.92, 0.3, 0.22)
-MUTED = Color(0.4, 0.44, 0.52)
-GRID = Color(0.78, 0.8, 0.84)
-PAPER = Color(0.965, 0.96, 0.94)
 HERE = Path(__file__).resolve().parent
 DEFAULT_INPUT = HERE / "quarterly-kpi-report.json"
 DEFAULT_OUTPUT = HERE.parent / "build" / "m1"
+
+
+def _report_theme() -> DesignTheme:
+    colors = {
+        "ink": Color(0.06, 0.1, 0.18),
+        "accent": Color(0.1, 0.38, 0.78),
+        "danger": Color(0.92, 0.3, 0.22),
+        "muted": Color(0.4, 0.44, 0.52),
+        "grid": Color(0.78, 0.8, 0.84),
+        "paper": Color(0.965, 0.96, 0.94),
+        "surface": Color(1, 1, 1),
+        "border": Color(0.82, 0.82, 0.8),
+    }
+    return DesignTheme(
+        colors=colors,
+        text_styles={
+            "report-period": TextStyle(
+                font_size=9,
+                font_name="Helvetica-Bold",
+                fill=colors["accent"],
+            ),
+            "report-title": TextStyle(
+                font_size=24,
+                font_name="Helvetica-Bold",
+                fill=colors["ink"],
+            ),
+            "metric-label": TextStyle(
+                font_size=8,
+                font_name="Helvetica-Bold",
+                fill=colors["muted"],
+            ),
+            "metric-value": TextStyle(
+                font_size=22,
+                font_name="Helvetica-Bold",
+                fill=colors["ink"],
+            ),
+            "metric-change-positive": TextStyle(
+                font_size=8,
+                font_name="Helvetica-Bold",
+                fill=colors["accent"],
+            ),
+            "metric-change-negative": TextStyle(
+                font_size=8,
+                font_name="Helvetica-Bold",
+                fill=colors["danger"],
+            ),
+            "chart-axis": TextStyle(font_size=7, fill=colors["muted"]),
+            "chart-month": TextStyle(font_size=8, fill=colors["muted"]),
+            "chart-title": TextStyle(
+                font_size=11,
+                font_name="Helvetica-Bold",
+                fill=colors["ink"],
+            ),
+            "chart-legend": TextStyle(
+                font_size=8,
+                font_name="Helvetica-Bold",
+                fill=colors["danger"],
+            ),
+            "report-source": TextStyle(font_size=7, fill=colors["muted"]),
+        },
+    )
+
+
+REPORT_THEME = _report_theme()
+REPORT_CONTEXT = DocumentContext(
+    width=612,
+    height=420,
+    title="Semantic quarterly KPI report",
+    theme=REPORT_THEME,
+    metadata={
+        "source": "examples/quarterly_kpi_report.py",
+        "component": "LineChart",
+        "business_case": "quarterly-kpi-report",
+    },
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +220,7 @@ def load_report_input(path: str | Path = DEFAULT_INPUT) -> ReportInput:
 class MetricCard:
     id: str
     metric: Metric
+    theme: DesignTheme = REPORT_THEME
     width: float = 164
     height: float = 70
 
@@ -161,8 +233,8 @@ class MetricCard:
                 top=top,
                 width=self.width,
                 height=self.height,
-                fill=Color(1, 1, 1),
-                stroke=Color(0.82, 0.82, 0.8),
+                fill=self.theme.color("surface"),
+                stroke=self.theme.color("border"),
                 stroke_width=0.7,
                 name=f"Metric card: {self.metric.label}",
             )
@@ -174,7 +246,7 @@ class MetricCard:
                 text=self.metric.label.upper(),
                 width=self.width - 24,
                 wrap=False,
-                style=TextStyle(font_size=8, font_name="Helvetica-Bold", fill=MUTED),
+                style=self.theme.text_style("metric-label"),
             ).render(x=x + 12, top=top - 12)
         )
         builder.add(
@@ -185,7 +257,7 @@ class MetricCard:
                 width=self.width - 24,
                 alignment="right",
                 wrap=False,
-                style=TextStyle(font_size=22, font_name="Helvetica-Bold", fill=INK),
+                style=self.theme.text_style("metric-value"),
             ).render(x=x + 12, top=top - 31)
         )
         builder.add(
@@ -196,10 +268,10 @@ class MetricCard:
                 width=60,
                 alignment="right",
                 wrap=False,
-                style=TextStyle(
-                    font_size=8,
-                    font_name="Helvetica-Bold",
-                    fill=BLUE if self.metric.positive else CORAL,
+                style=self.theme.text_style(
+                    "metric-change-positive"
+                    if self.metric.positive
+                    else "metric-change-negative"
                 ),
             ).render(x=x + self.width - 72, top=top - 59)
         )
@@ -219,6 +291,7 @@ class LineChart:
     labels: tuple[str, ...]
     values: tuple[float, ...]
     target: float
+    theme: DesignTheme = REPORT_THEME
     width: float = 450
     height: float = 118
     minimum: float = 60
@@ -248,7 +321,7 @@ class LineChart:
                 polyline_path(
                     f"{self.id}.grid-{tick}",
                     points=[(x, y), (x + self.width, y)],
-                    stroke=GRID,
+                    stroke=self.theme.color("grid"),
                     stroke_width=0.7,
                     dash_pattern=(2, 4),
                     line_cap="round",
@@ -263,7 +336,7 @@ class LineChart:
                     width=30,
                     alignment="right",
                     wrap=False,
-                    style=TextStyle(font_size=7, fill=MUTED),
+                    style=self.theme.text_style("chart-axis"),
                 ).render(x=x - 38, top=y + 3)
             )
 
@@ -272,7 +345,7 @@ class LineChart:
             polyline_path(
                 f"{self.id}.target",
                 points=[(x, target_y), (x + self.width, target_y)],
-                stroke=CORAL,
+                stroke=self.theme.color("danger"),
                 stroke_width=1.6,
                 dash_pattern=(10, 6),
                 dash_offset=2,
@@ -290,7 +363,7 @@ class LineChart:
             polyline_path(
                 f"{self.id}.actual",
                 points=points,
-                stroke=BLUE,
+                stroke=self.theme.color("accent"),
                 stroke_width=3,
                 line_cap="round",
                 line_join="round",
@@ -307,8 +380,8 @@ class LineChart:
                     center_y=point_y,
                     radius_x=4,
                     radius_y=4,
-                    fill=Color(1, 1, 1),
-                    stroke=BLUE,
+                    fill=self.theme.color("surface"),
+                    stroke=self.theme.color("accent"),
                     stroke_width=2,
                     name=f"{label}: {value:g}",
                 )
@@ -321,7 +394,7 @@ class LineChart:
                     width=50,
                     alignment="center",
                     wrap=False,
-                    style=TextStyle(font_size=8, fill=MUTED),
+                    style=self.theme.text_style("chart-month"),
                 ).render(x=point_x - 25, top=top - self.height - 12)
             )
         layer = builder.build()
@@ -334,17 +407,22 @@ class LineChart:
         )
 
 
-def build_document(report: ReportInput | None = None) -> Document:
+def build_document(
+    report: ReportInput | None = None,
+    *,
+    context: DocumentContext = REPORT_CONTEXT,
+) -> Document:
     report = report or load_report_input()
+    theme = context.theme
     builder = LayerBuilder(id="quarterly-report", name="Quarterly KPI report")
     builder.add_path(
         rectangle_path(
             "report.background",
             x=0,
-            top=420,
-            width=612,
-            height=420,
-            fill=PAPER,
+            top=context.height,
+            width=context.width,
+            height=context.height,
+            fill=theme.color("paper"),
             name="Report background",
         )
     )
@@ -356,7 +434,7 @@ def build_document(report: ReportInput | None = None) -> Document:
             width=536,
             alignment="right",
             wrap=False,
-            style=TextStyle(font_size=9, font_name="Helvetica-Bold", fill=BLUE),
+            style=theme.text_style("report-period"),
         ).render(x=38, top=394)
     )
     builder.add(
@@ -366,14 +444,14 @@ def build_document(report: ReportInput | None = None) -> Document:
             text=report.title,
             width=536,
             wrap=False,
-            style=TextStyle(font_size=24, font_name="Helvetica-Bold", fill=INK),
+            style=theme.text_style("report-title"),
         ).render(x=38, top=377)
     )
 
     for index, (metric, x) in enumerate(
         zip(report.metrics, (38, 224, 410), strict=True), start=1
     ):
-        card = MetricCard(id=f"metric-{index}", metric=metric)
+        card = MetricCard(id=f"metric-{index}", metric=metric, theme=theme)
         builder.add_grouped(
             card.render(x=x, top=332),
             group_id=f"metric-{index}.group",
@@ -387,8 +465,8 @@ def build_document(report: ReportInput | None = None) -> Document:
             top=244,
             width=536,
             height=194,
-            fill=Color(1, 1, 1),
-            stroke=Color(0.82, 0.82, 0.8),
+            fill=theme.color("surface"),
+            stroke=theme.color("border"),
             stroke_width=0.7,
             name="Chart panel",
         )
@@ -400,7 +478,7 @@ def build_document(report: ReportInput | None = None) -> Document:
             text="Monthly operating index",
             width=250,
             wrap=False,
-            style=TextStyle(font_size=11, font_name="Helvetica-Bold", fill=INK),
+            style=theme.text_style("chart-title"),
         ).render(x=58, top=224)
     )
     builder.add(
@@ -411,7 +489,7 @@ def build_document(report: ReportInput | None = None) -> Document:
             width=120,
             alignment="right",
             wrap=False,
-            style=TextStyle(font_size=8, font_name="Helvetica-Bold", fill=CORAL),
+            style=theme.text_style("chart-legend"),
         ).render(x=434, top=223)
     )
     chart = LineChart(
@@ -419,6 +497,7 @@ def build_document(report: ReportInput | None = None) -> Document:
         labels=report.chart.labels,
         values=report.chart.values,
         target=report.chart.target,
+        theme=theme,
     )
     builder.add_grouped(
         chart.render(x=94, top=195),
@@ -433,26 +512,16 @@ def build_document(report: ReportInput | None = None) -> Document:
             width=536,
             alignment="right",
             wrap=False,
-            style=TextStyle(font_size=7, fill=MUTED),
+            style=theme.text_style("report-source"),
         ).render(x=38, top=30)
     )
-    return Document(
-        width=612,
-        height=420,
-        title="Semantic quarterly KPI report",
-        metadata={
-            "source": "examples/quarterly_kpi_report.py",
-            "component": "LineChart",
-            "business_case": "quarterly-kpi-report",
-        },
-        layers=[builder.build()],
-    )
+    return context.create_document([builder.build()])
 
 
 M1_CONTRACT = ProductionContract(
     production_id="quarterly-kpi-report",
-    width=612,
-    height=420,
+    width=REPORT_CONTEXT.width,
+    height=REPORT_CONTEXT.height,
     layer_names=("Quarterly KPI report",),
     path_count=17,
     text_count=24,

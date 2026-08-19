@@ -1,14 +1,14 @@
 # ロードマップ
 
-更新日: 2026-08-18
+更新日: 2026-08-19
 
 ## 現在地
 
-M1 reference productionは完了しました。`quarterly_kpi_report`で、明示的入力から生成、第一層検証、preview、native materialization、Illustrator実機検査、human visual acceptanceまで一続きの完成判定を通しています。
+M1 reference productionは完了しました。M2では`quarterly_kpi_report`を明示的な`DocumentContext`とimmutableなnamed-role `DesignTheme`へ移行し、生成AIのbyte同一性を確認しました。
 
 ## M2: デザインモデルの拡張
 
-reference productionで必要になった順に、document context / theme、入力validation、layout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
+次はM1に残るad-hocな入力validationを第2層の再利用可能な契約へ移します。その後、reference productionで必要になった順にlayout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
 
 ## M3: 一般性の確認
 

@@ -56,6 +56,9 @@ def test_m1_static_pipeline_emits_passing_evidence(tmp_path: Path) -> None:
     assert report["automated"]["status"] == "passed"
     assert all(report["automated"]["checks"].values())
     assert report["visual_acceptance"]["status"] == "pending"
+    assert report["artifacts"]["legacy_ai"]["sha256"] == (
+        "efc8df2192fd16d430ec7b1e70ec201b7e8b2f9a0968f50acd637c0725abe970"
+    )
     assert (tmp_path / "quarterly-kpi-report.ai").is_file()
     assert (tmp_path / "quarterly-kpi-report.ir.json").is_file()
     assert (tmp_path / "quarterly-kpi-report.preview.png").is_file()

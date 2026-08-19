@@ -6,6 +6,8 @@
 
 第2層はcomponent、template、variant、layout、theme、入力validation、stable identityを所有し、第一層のgraphic IRへrenderします。`.ai`のparser、writer、低水準IR、検証は`py-ai-illustrator`へ委譲します。依存方向は`illustrator-agent -> py-ai-illustrator`だけです。
 
+`DocumentContext`はcanvas、point単位、title、metadata、`DesignTheme`を明示します。themeは色と文字styleをnamed roleで解決し、componentが要求するroleの欠落を既定値で補わず拒否します。
+
 ## Source of truth
 
 新規生成ではPython source、template、入力データをsource of truthとします。既存`.ai`の局所編集では元ファイルをsource of truthとして第一層のsource-preserving patchを使い、一般の`.ai`から高水準componentを推測復元しません。

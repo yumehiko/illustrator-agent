@@ -21,13 +21,16 @@ from .authoring import (
     transform_path,
     transform_text,
 )
+from .context import DesignTheme, DocumentContext
 
 __all__ = [
     "AffineTransform",
     "AreaTextBlock",
     "Artboard",
     "Color",
+    "DesignTheme",
     "Document",
+    "DocumentContext",
     "FontSpec",
     "Group",
     "LayerBuilder",
