@@ -4,7 +4,7 @@
 
 ## 現在地
 
-M1 reference production、新規制作のnative-first移行、再利用可能な入力contractは完了しました。provenance付きfont-aware layout / fail-closed overflow APIと日本語scheduleのpure gateは実装済みです。
+M1 reference production、新規制作のnative-first移行、再利用可能な入力contractに加え、provenance付きfont-aware layout / fail-closed overflow APIと日本語schedule productionが完了しました。日本語scheduleは指定font、native compile/reopen、PDF preview、visual acceptanceまでIllustrator実機gateを通過しています。
 
 ## M2: デザインモデルの拡張
 
@@ -12,7 +12,7 @@ M1 reference production、新規制作のnative-first移行、再利用可能な
 
 ## M3: 一般性の確認
 
-日本語scheduleは、指定fontの利用可否、native compile/reopen、PDF preview、visual acceptanceのIllustrator実機gateが未完了です。完了後、データ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
+日本語文字組みは代表制作物で確認済みです。次はデータ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
 
 ## M4: 第3層
 
