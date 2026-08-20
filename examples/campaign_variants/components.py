@@ -1,14 +1,12 @@
-"""Build three campaign formats as named native Illustrator artboards."""
+"""Editable component for one campaign format."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-
-from py_ai_illustrator.native import compile_native_ai
 
 from illustrator_agent import (
-    Artboard,
+    AreaTextBlock,
     Color,
-    Document,
     FontSpec,
     LayerBuilder,
     RenderedComponent,
@@ -18,25 +16,23 @@ from illustrator_agent import (
     rectangle_path,
 )
 
+from .identities import VariantIdentities
+from .input import CampaignInput, VariantSpec
 
-@dataclass(frozen=True, slots=True)
-class VariantSpec:
-    id: str
-    name: str
-    left: float
-    top: float
-    width: float
-    height: float
-    layout: str
+
+def description_geometry(spec: VariantSpec) -> tuple[float, float]:
+    """Return the editable description frame dimensions for a layout policy."""
+
+    if spec.layout == "banner":
+        return 270, 34
+    return spec.width - 54, 52
 
 
 @dataclass(frozen=True, slots=True)
 class CampaignVariant:
+    campaign: CampaignInput
     spec: VariantSpec
-    eyebrow: str
-    title: str
-    description: str
-    action: str
+    identities: VariantIdentities
 
     def render(self) -> RenderedComponent:
         navy = Color(0.04, 0.08, 0.15)
@@ -45,10 +41,12 @@ class CampaignVariant:
         coral = Color(0.96, 0.3, 0.2)
         muted = Color(0.73, 0.78, 0.84)
         spec = self.spec
-        builder = LayerBuilder(id=spec.id, name=spec.name)
+        ids = self.identities
+        title_width, description_height = description_geometry(spec)
+        builder = LayerBuilder(id=ids.component, name=spec.name)
         builder.add_path(
             rectangle_path(
-                f"{spec.id}.background",
+                ids.background,
                 x=spec.left,
                 top=spec.top,
                 width=spec.width,
@@ -61,11 +59,10 @@ class CampaignVariant:
         if spec.layout == "banner":
             accent_x = spec.left + spec.width - 72
             accent_y = spec.top - spec.height / 2
-            title_width = 270
             title_size = 27
             eyebrow_top = spec.top - 24
             title_top = spec.top - 59
-            description_top = spec.top - 127
+            description_top = spec.top - 124
             action_x = spec.left + 320
             action_top = spec.top - 67
             action_width = 138
@@ -73,11 +70,10 @@ class CampaignVariant:
         else:
             accent_x = spec.left + spec.width - 58
             accent_y = spec.top - 60
-            title_width = spec.width - 54
             title_size = 32 if spec.layout == "square" else 27
             eyebrow_top = spec.top - 27
             title_top = spec.top - 86
-            description_top = spec.top - 190
+            description_top = spec.top - 188
             action_x = spec.left + 27
             action_top = spec.top - 270
             action_width = min(164, spec.width - 54)
@@ -85,7 +81,7 @@ class CampaignVariant:
 
         builder.add_path(
             ellipse_path(
-                f"{spec.id}.accent",
+                ids.accent,
                 center_x=accent_x,
                 center_y=accent_y,
                 radius_x=62 if spec.layout == "banner" else 54,
@@ -96,9 +92,9 @@ class CampaignVariant:
         )
         builder.add(
             TextBlock(
-                id=f"{spec.id}.eyebrow",
+                id=ids.eyebrow,
                 name="Campaign series",
-                text=self.eyebrow,
+                text=self.campaign.eyebrow,
                 width=spec.width - 54,
                 wrap=False,
                 style=TextStyle(
@@ -111,9 +107,9 @@ class CampaignVariant:
         )
         builder.add(
             TextBlock(
-                id=f"{spec.id}.title",
+                id=ids.title,
                 name="Campaign title",
-                text=self.title,
+                text=self.campaign.title,
                 width=title_width,
                 wrap=False,
                 style=TextStyle(
@@ -125,12 +121,12 @@ class CampaignVariant:
             ).render(x=spec.left + 27, top=title_top)
         )
         builder.add(
-            TextBlock(
-                id=f"{spec.id}.description",
+            AreaTextBlock(
+                id=ids.description,
                 name="Campaign description",
-                text=self.description,
+                text=self.campaign.description,
                 width=title_width,
-                wrap=spec.layout != "banner",
+                height=description_height,
                 style=TextStyle(
                     font_size=11,
                     font=FontSpec("Helvetica"),
@@ -141,7 +137,7 @@ class CampaignVariant:
         )
         builder.add_path(
             rectangle_path(
-                f"{spec.id}.action-background",
+                ids.action_background,
                 x=action_x,
                 top=action_top,
                 width=action_width,
@@ -152,9 +148,9 @@ class CampaignVariant:
         )
         builder.add(
             TextBlock(
-                id=f"{spec.id}.action",
+                id=ids.action,
                 name="Action label",
-                text=self.action,
+                text=self.campaign.action,
                 width=action_width,
                 alignment="center",
                 wrap=False,
@@ -168,7 +164,7 @@ class CampaignVariant:
         )
         builder.add(
             TextBlock(
-                id=f"{spec.id}.footer",
+                id=ids.footer,
                 name="Format label",
                 text=spec.name.upper(),
                 width=spec.width - 54,
@@ -191,53 +187,3 @@ class CampaignVariant:
             text_frames=layer.text_frames,
             item_order=layer.item_order,
         )
-
-
-VARIANTS = (
-    VariantSpec("campaign.square", "Square 1x1", 20, 380, 360, 360, "square"),
-    VariantSpec("campaign.portrait", "Portrait 3x4", 400, 380, 270, 360, "portrait"),
-    VariantSpec("campaign.banner", "Banner 3x1", 690, 380, 540, 180, "banner"),
-)
-
-
-def build_document() -> Document:
-    page = LayerBuilder(id="campaign", name="Campaign variants")
-    for spec in VARIANTS:
-        component = CampaignVariant(
-            spec=spec,
-            eyebrow="DESIGN SYSTEMS / WORKSHOP",
-            title="BUILD\nWITH MEANING",
-            description="Turn shared rules into editable, reusable design.",
-            action="RESERVE A SEAT",
-        ).render()
-        page.add_grouped(component, group_id=f"{spec.id}.group", group_name=spec.name)
-
-    return Document(
-        width=1250,
-        height=400,
-        title="Campaign variants with multiple artboards",
-        metadata={
-            "source": "examples/campaign_variants.py",
-            "business_case": "multi-format-campaign",
-            "variant_count": len(VARIANTS),
-        },
-        artboards=[
-            Artboard(
-                id=spec.id,
-                name=spec.name,
-                left=spec.left,
-                top=spec.top,
-                width=spec.width,
-                height=spec.height,
-            )
-            for spec in VARIANTS
-        ],
-        layers=[page.build()],
-    )
-
-
-if __name__ == "__main__":
-    output = Path(__file__).with_name("campaign-variants.native.ai")
-    result = compile_native_ai(build_document(), output, source_base=Path(__file__).parent)
-    if result["status"] != "passed":
-        raise RuntimeError(result)

@@ -5,6 +5,14 @@ from py_ai_illustrator.model import Artboard, Color, Document, Group, LinkedImag
 from .composition import LayerBuilder, RenderedComponent
 from .context import DesignTheme, DocumentContext
 from .geometry import ellipse_path, polyline_path, rectangle_path
+from .identity import (
+    ComponentIdentity,
+    DuplicateSemanticKeyError,
+    IdentityError,
+    IdentityNamespace,
+    StableIdentityCollisionError,
+    validate_identity_segment,
+)
 from .images import fit_linked_image
 from .input_contracts import (
     Contract,
@@ -49,12 +57,16 @@ __all__ = [
     "Artboard",
     "ApproximateTextMeasurer",
     "Color",
+    "ComponentIdentity",
     "Contract",
     "DesignTheme",
     "Document",
     "DocumentContext",
+    "DuplicateSemanticKeyError",
     "FontSpec",
     "Group",
+    "IdentityError",
+    "IdentityNamespace",
     "InputValidationError",
     "LayerBuilder",
     "LinkedImage",
@@ -64,6 +76,7 @@ __all__ = [
     "OverflowStatus",
     "RecordedTextMeasurer",
     "RenderedComponent",
+    "StableIdentityCollisionError",
     "Table",
     "TableColumn",
     "TableStyle",
@@ -89,5 +102,6 @@ __all__ = [
     "transform_image",
     "transform_path",
     "transform_text",
+    "validate_identity_segment",
     "wrap_text_approximately",
 ]
