@@ -6,7 +6,8 @@ import pytest
 from examples.quarterly_kpi_report.cli import PRODUCTION_CONTRACT
 from examples.quarterly_kpi_report.document import build_document
 from examples.quarterly_kpi_report.input import DEFAULT_INPUT, load_report_input
-from illustrator_agent import InputValidationError
+from illustrator_agent import InputValidationError, production_verification
+from illustrator_agent.layer1_compatibility import Layer1CompatibilityError
 from illustrator_agent.production import verify_reference_document
 
 
@@ -81,6 +82,7 @@ def test_pure_gate_report_schema_remains_stable() -> None:
         "source_determinism",
         "ir_json_roundtrip",
         "text_layout",
+        "layer1",
     }
     assert set(evidence["checks"]) == {
         "source_is_deterministic",
@@ -120,3 +122,27 @@ def test_pure_gate_fails_on_nondeterministic_document_build() -> None:
     assert evidence["status"] == "failed"
     assert evidence["checks"]["source_is_deterministic"] is False
     assert evidence["checks"]["ir_json_roundtrip"] is True
+
+
+def test_pure_gate_rejects_an_unidentified_layer1_before_rendering(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rendered = False
+
+    def unexpected_render() -> None:
+        nonlocal rendered
+        rendered = True
+
+    def reject_layer1() -> None:
+        raise Layer1CompatibilityError("wrong commit")
+
+    monkeypatch.setattr(
+        production_verification,
+        "require_layer1_compatibility",
+        reject_layer1,
+    )
+
+    with pytest.raises(Layer1CompatibilityError, match="wrong commit"):
+        verify_reference_document(unexpected_render, contract=PRODUCTION_CONTRACT)
+
+    assert rendered is False

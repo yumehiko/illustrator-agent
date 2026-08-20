@@ -103,12 +103,12 @@ def compile_reference_production(
     if visual_accepted_by is not None and not visual_accepted_by.strip():
         raise ValueError("visual_accepted_by must not be empty")
 
-    artifacts = _prepare_artifacts(output_path, contract.production_id, force=force)
     document, pure = evaluate_reference_document(
         build_document,
         contract,
         text_layout_report,
     )
+    artifacts = _prepare_artifacts(output_path, contract.production_id, force=force)
     artifacts["ir"].write_text(
         json.dumps(document.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
