@@ -13,6 +13,7 @@ from py_ai_illustrator.native import compile_native_ai
 from py_ai_illustrator.verification import render_preview
 
 from .production_contract import (
+    ArtboardVariantContract,
     DocumentFactory,
     ProductionAreaText,
     ProductionArtboard,
@@ -24,6 +25,7 @@ from .production_contract import (
 from .production_dom import illustrator_contract_checks
 
 __all__ = [
+    "ArtboardVariantContract",
     "ProductionAreaText",
     "ProductionArtboard",
     "ProductionContract",

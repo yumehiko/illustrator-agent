@@ -8,6 +8,8 @@
 
 `DocumentContext`はcanvas、内部表現がpointであること、title、metadata、`DesignTheme`を明示します。`unit == "pt"`は利用者の入力単位を制限する製品要件ではなく、IRへ渡す座標の宣言です。themeは色と文字styleをnamed roleで解決し、componentが要求するroleの欠落を既定値で補わず拒否します。
 
+component identityは明示的なnamespaceとsemantic keyから構築します。segmentはdelimiterと正規化に依存しない制限された形式とし、同一scopeのduplicate keyと最終stable ID衝突を全IDの予約時に拒否してからIRを生成します。配列indexとrender順はidentityへ含めません。複数artboard productionはsemantic keyごとのcomponent、artboard、group、主要子itemの対応をproduction contractで検証します。
+
 ## Source of truth
 
 新規生成ではPython source、template、入力データをsource of truthとします。既存`.ai`の局所編集では元ファイルをsource of truthとして第一層のsource-preserving patchを使い、一般の`.ai`から高水準componentを推測復元しません。

@@ -28,6 +28,15 @@ class ProductionArtboard:
 
 
 @dataclass(frozen=True, slots=True)
+class ArtboardVariantContract:
+    """Semantic component identity corresponding to one production artboard."""
+
+    semantic_key: str
+    component_id: str
+    artboard_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class ProductionLinkedImage:
     """Expected editable linked-image placement in document coordinates."""
 
@@ -67,6 +76,7 @@ class ProductionContract:
     required_fonts: tuple[str, ...] = ()
     require_verified_text_layout: bool = False
     artboards: tuple[ProductionArtboard, ...] = ()
+    artboard_variants: tuple[ArtboardVariantContract, ...] = ()
     linked_images: tuple[ProductionLinkedImage, ...] = ()
     area_texts: tuple[ProductionAreaText, ...] = ()
 
@@ -78,6 +88,9 @@ class ProductionContract:
             for name in self.required_fonts
         ):
             raise ValueError("Production contract fonts must use PostScript names")
+        variant_keys = [variant.semantic_key for variant in self.artboard_variants]
+        if len(set(variant_keys)) != len(variant_keys):
+            raise ValueError("Production contract variant semantic keys must be unique")
 
 
 def _document_evidence(document: Document) -> dict[str, Any]:
@@ -86,6 +99,7 @@ def _document_evidence(document: Document) -> dict[str, Any]:
     texts = []
     images = []
     group_descendant_ids: dict[str, list[str]] = {}
+    group_names_by_id: dict[str, str | None] = {}
 
     def visit_group(group: Group) -> list[str]:
         groups.append(group)
@@ -107,6 +121,7 @@ def _document_evidence(document: Document) -> dict[str, Any]:
             descendants.append(child.id)
             descendants.extend(visit_group(child))
         group_descendant_ids[group.id] = descendants
+        group_names_by_id[group.id] = group.name
         return descendants
 
     for layer in document.layers:
@@ -122,6 +137,7 @@ def _document_evidence(document: Document) -> dict[str, Any]:
         for group in layer.groups:
             visit_group(group)
     ids = {
+        *(artboard.id for artboard in document.artboards),
         *(layer.id for layer in document.layers),
         *(group.id for group in groups),
         *(path.id for path in paths),
@@ -184,6 +200,7 @@ def _document_evidence(document: Document) -> dict[str, Any]:
             for artboard in document.artboards
         ],
         "group_names": [group.name for group in groups],
+        "group_names_by_id": group_names_by_id,
         "group_descendant_ids": group_descendant_ids,
         "font_postscript_names": sorted(
             {text.native_font_name or text.font_name for text in texts}
@@ -261,6 +278,29 @@ def _numbers_close(actual: Any, expected: float, *, tolerance: float = 1e-9) -> 
     return isinstance(actual, int | float) and abs(float(actual) - expected) <= tolerance
 
 
+def _artboard_variant_correspondence(
+    evidence: dict[str, Any], contract: ProductionContract
+) -> bool:
+    if not contract.artboard_variants:
+        return True
+    if len(contract.artboard_variants) != len(contract.artboards):
+        return False
+    artboards = {artboard.id: artboard for artboard in contract.artboards}
+    group_names_by_id = evidence["group_names_by_id"]
+    return all(
+        (artboard := artboards.get(variant.artboard_id)) is not None
+        and variant.component_id.endswith(f".{variant.semantic_key}")
+        and variant.artboard_id == f"{variant.component_id}.artboard"
+        and artboard.group_id == f"{variant.component_id}.group"
+        and group_names_by_id.get(artboard.group_id) == artboard.name
+        and all(
+            item_id.startswith(f"{variant.component_id}.")
+            for item_id in artboard.required_ids
+        )
+        for variant in contract.artboard_variants
+    )
+
+
 def _contract_checks(
     evidence: dict[str, Any],
     contract: ProductionContract,
@@ -329,6 +369,9 @@ def _contract_checks(
         "area_texts": area_texts_match,
         "artboards": evidence["artboards"] == expected_artboards,
         "artboard_content": artboard_content,
+        "artboard_variant_correspondence": _artboard_variant_correspondence(
+            evidence, contract
+        ),
         "required_ids": set(contract.required_ids) <= ids,
         "required_group_names": set(contract.required_group_names) <= group_names,
         "required_fonts_declared": set(contract.required_fonts)

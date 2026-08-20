@@ -44,6 +44,12 @@ uv run python -m examples.product_catalog
 
 日本語制作物はfont-aware measurement evidenceを明示入力として要求し、近似計測だけではoverflowを合格させません。`product_catalog`はcommit済みの決定的なPNG fixtureを変更せずに読み、`contain`配置したlinked image、editable area text、2 artboardを検証します。fixtureの生成手順は`uv run python -m examples.generate_product_swatch --output <new-path>`で明示的に実行し、既存fileは上書きしません。成果物は`build/`以下へ出力します。同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。Illustrator不要のIR生成・determinism・契約検証は通常の`pytest`、実機gateは`RUN_ILLUSTRATOR_TESTS=1 uv run pytest tests/illustrator`で分離して実行します。
 
+semantic keyから入力順に依存しないcomponent identityを割り当て、square、portrait、bannerの3 artboardを生成するデータ駆動productionも同じgateを使います。
+
+```bash
+uv run python -m examples.campaign_variants
+```
+
 ## ライセンス
 
 [MIT License](LICENSE)です。
