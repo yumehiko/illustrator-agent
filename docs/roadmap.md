@@ -4,15 +4,15 @@
 
 ## 現在地
 
-M1 reference production、新規制作のnative-first移行、再利用可能な入力contractに加え、provenance付きfont-aware layout / fail-closed overflow APIと日本語schedule productionが完了しました。日本語scheduleは指定font、native compile/reopen、PDF preview、visual acceptanceまでIllustrator実機gateを通過しています。
+M1 reference production、新規制作のnative-first移行、再利用可能な入力contractに加え、provenance付きfont-aware layout / fail-closed overflow APIが完了しました。日本語scheduleと`product_catalog`は、指定font、native compile/reopen、semantic preservation、PDF preview、visual acceptanceまでIllustrator 30.7実機gateを通過しています。`product_catalog`ではlinked image、editable area text、2 artboardと、保存・再open後の非overflow、2ページpreviewを確認済みです。
 
 ## M2: デザインモデルの拡張
 
-次は必要になった順にcomponent identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
+必要になった順にcomponent identity等を追加します。先回りした機能網羅は行いません。
 
 ## M3: 一般性の確認
 
-日本語文字組みは代表制作物で確認済みです。次はデータ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
+次はデータ駆動variantで一般性を確認します。
 
 ## M4: 第3層
 

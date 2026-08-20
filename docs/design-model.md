@@ -27,6 +27,8 @@ text/imageの非rigid transform拒否は現行IR/backendの能力限界で、恒
 
 pure gateは`Document`生成、JSON往復、determinism、production contractと記録済みlayout evidenceをIllustratorなしで検証します。native compile、指定fontの利用可否、保存・再open後のsemantic/editability、PDF preview、visual acceptanceはIllustrator実機gateとして分離します。
 
+linked imageの第2層APIはintrinsic dimensions、target box、fit policy、alignmentを入力とし、現在は縦横比を保持して全体を収める`contain`だけを提供します。cropを必要とする`cover`は、第1層が画像clipをnative再openまで検証できるまでは提供しません。area textを含むproduction contractは、実機DOM inspectionでframe寸法、font、leading、編集可能なarea text種別、`overflows == false`を確認します。
+
 ## 完成条件
 
 代表制作物ごとに次を確認します。

@@ -5,6 +5,7 @@ from py_ai_illustrator.model import Artboard, Color, Document, Group, LinkedImag
 from .composition import LayerBuilder, RenderedComponent
 from .context import DesignTheme, DocumentContext
 from .geometry import ellipse_path, polyline_path, rectangle_path
+from .images import fit_linked_image
 from .input_contracts import (
     Contract,
     InputValidationError,
@@ -79,6 +80,7 @@ __all__ = [
     "estimate_text_width",
     "field",
     "finite_number",
+    "fit_linked_image",
     "non_empty_string",
     "object_contract",
     "polyline_path",
