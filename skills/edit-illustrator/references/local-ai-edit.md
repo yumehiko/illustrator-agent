@@ -2,11 +2,21 @@
 
 Read this reference only for a bounded edit whose source of truth is an existing `.ai` file.
 
-Use the locked `py-ai` CLI from `py-ai-illustrator`. Its current writable profiles are
-`legacy-ai7-trusted-v1` and `modern-ai-synchronized-patch-v1`. Profile support is an implementation
-capability, not a permanent product restriction.
+Use the locked `py-ai` CLI from `py-ai-illustrator`. Choose one of two routes before planning:
 
-## Inspect and specify
+- the source-preserving pure route, with `legacy-ai7-trusted-v1` or
+  `modern-ai-synchronized-patch-v1`;
+- the licensed-runtime route, `illustrator-native-local-edit-v1`, for a bounded live text or linked
+  image change that the pure inspection cannot prove safe.
+
+These routes have different preservation guarantees. Missing pure selectors are a stop, not
+permission to fall back. Select the native route explicitly only when current-format Illustrator
+save-as is acceptable and the licensed runtime gates are required. Profile support is an
+implementation capability, not a permanent product restriction.
+
+## Source-preserving pure route
+
+### Inspect and specify
 
 Keep the original input unchanged. Choose new paths under `build/` for the operation manifest,
 edited `.ai`, diff image, and captured reports.
@@ -41,7 +51,7 @@ Supported requests are `set_fill`, `set_stroke`, `replace_text`, `translate`, an
 `replace_linked_image_source`; the inspected target may support only a subset. Include all intended
 changes in one atomic manifest when they must succeed together.
 
-## Plan, apply, validate, diff
+### Plan, apply, validate, diff
 
 Follow this order without skipping a failed phase:
 
@@ -70,6 +80,46 @@ The standalone semantic diff supports legacy AI only. For modern AI, rely on the
 patch profile's apply validations and the standalone visual diff; do not misreport an unsupported
 semantic command as a successful gate.
 
+## Illustrator-native local-edit route
+
+Use `illustrator-native-local-edit-v1` only after choosing the licensed-runtime route explicitly.
+It is not an extension or fallback of `modern-ai-synchronized-patch-v1`: Illustrator regenerates a
+current-format PDF-compatible AI, so the source remains byte-identical but the output does not
+promise source-prefix or unknown PrivateData byte preservation.
+
+Start a fresh revision under `build/`, capture every JSON response, and run in this order:
+
+```bash
+uv run --locked py-ai inspect-native-local <input.ai>
+uv run --locked py-ai plan-native-local <input.ai> <operations.json>
+uv run --locked py-ai apply-native-local <input.ai> <operations.json> --output <new-output.ai>
+uv run --locked py-ai validate <new-output.ai>
+uv run --locked py-ai preview <new-output.ai> --output <new-preview.png>
+```
+
+Native inspection must advertise exactly one live `TextFrame` or `PlacedItem` for every requested
+operation. Copy its stable `type` and `id`; do not borrow selectors from pure inspection. The
+manifest requires the inspected `source_sha256`. For a linked asset, use an explicit existing path,
+and keep `replace_text` and `replace_linked_image_source` in one atomic manifest when they define
+one variant.
+
+Before apply, require `applicable: true`, no stop reasons, one exact resolved target per operation,
+the expected source and asset digests, and feature profile `illustrator-native-local-edit-v1` with
+`licensed_runtime_required: true`. Apply already creates `<output-stem>-visual-diff.png`; do not
+replace that evidence with an unrelated standalone diff.
+
+Require `applied: true`, no stop reasons, all runtime and validation checks true, matching output
+digest, and replacement-asset hashes stable before/after execution and before publish. In
+particular, require save/reopen evidence for live text, font/style and no substitution, linked
+external image and editability, non-target text/image/path fingerprints and document structure,
+PDF-compatible container and PrivateData/PDF timestamp freshness, unchanged source bytes, and zero
+changed pixels outside the allowed target rectangles. Require standalone container validation,
+then inspect the preview and native visual-diff PNG before accepting the result.
+
+If Illustrator is unlicensed, unavailable, times out, or any selector, asset, DOM, container,
+timestamp, source, or visual-bound check fails, stop. Do not publish or treat a generated candidate
+as evidence.
+
 ## Fail closed and report
 
 Stop on an ambiguous or missing selector, stale digest, unsupported operation or representation,
@@ -79,4 +129,5 @@ flattening, outlining, font substitution, materialization, or another lossy conv
 
 Report input and output digests and paths, feature profile, manifest, resolved targets, expected and
 actual impacts, apply validation, container validation, semantic-diff state, visual-diff artifact,
-and any stop reasons. A generated file without this evidence is not a verified local edit.
+preview and visual acceptance state, runtime gate state, and any stop reasons. A generated file
+without this evidence is not a verified local edit.

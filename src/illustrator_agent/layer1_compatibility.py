@@ -13,7 +13,7 @@ from urllib.parse import unquote, urlparse
 LAYER1_DISTRIBUTION = "py-ai-illustrator"
 LAYER1_REPOSITORY = "https://github.com/yumehiko/py-ai-illustrator.git"
 LAYER1_VERSION = "0.1.0.dev0"
-LAYER1_COMMIT = "322b97d2ababc2feb4dd64b6a453885596e74da6"
+LAYER1_COMMIT = "58529ffb08f69ea98488dc0c23adc438621aae4c"
 
 
 class Layer1CompatibilityError(RuntimeError):

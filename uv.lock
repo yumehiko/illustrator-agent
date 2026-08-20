@@ -27,7 +27,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "py-ai-illustrator", git = "https://github.com/yumehiko/py-ai-illustrator.git?rev=322b97d2ababc2feb4dd64b6a453885596e74da6" },
+    { name = "py-ai-illustrator", git = "https://github.com/yumehiko/py-ai-illustrator.git?rev=58529ffb08f69ea98488dc0c23adc438621aae4c" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12" },
 ]
@@ -63,7 +63,7 @@ wheels = [
 [[package]]
 name = "py-ai-illustrator"
 version = "0.1.0.dev0"
-source = { git = "https://github.com/yumehiko/py-ai-illustrator.git?rev=322b97d2ababc2feb4dd64b6a453885596e74da6#322b97d2ababc2feb4dd64b6a453885596e74da6" }
+source = { git = "https://github.com/yumehiko/py-ai-illustrator.git?rev=58529ffb08f69ea98488dc0c23adc438621aae4c#58529ffb08f69ea98488dc0c23adc438621aae4c" }
 dependencies = [
     { name = "zstandard" },
 ]

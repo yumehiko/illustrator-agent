@@ -109,6 +109,33 @@ def test_local_edit_uses_locked_fail_closed_pipeline() -> None:
     assert "applied: true" in reference
 
 
+def test_local_edit_explicitly_separates_pure_and_native_routes() -> None:
+    reference = LOCAL_EDIT.read_text(encoding="utf-8")
+
+    assert "source-preserving pure route" in reference
+    assert "illustrator-native-local-edit-v1" in reference
+    assert "Missing pure selectors are a stop" in reference
+    assert "permission to fall back" in reference
+    native_reference = reference.split("## Illustrator-native local-edit route", 1)[1]
+    _assert_in_order(
+        native_reference,
+        (
+            "py-ai inspect-native-local",
+            "py-ai plan-native-local",
+            "py-ai apply-native-local",
+            "py-ai validate",
+            "py-ai preview",
+        ),
+    )
+    assert "licensed_runtime_required: true" in reference
+    assert "source-prefix or unknown PrivateData byte preservation" in reference
+    assert "replacement-asset hashes stable" in reference
+    assert "zero" in reference
+    assert "changed pixels outside the allowed target rectangles" in reference
+    assert "font/style and no substitution" in reference
+    assert "non-target text/image/path fingerprints and document structure" in reference
+
+
 def test_skill_metadata_keeps_automatic_invocation_and_default_prompt() -> None:
     metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
 

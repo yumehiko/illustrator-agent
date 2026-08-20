@@ -18,9 +18,12 @@ from py_ai_illustrator import (
     LinkedImage,
     Point,
     TextFrame,
+    apply_illustrator_native_local,
     compile_native_ai,
+    inspect_illustrator_native_local,
     iter_linked_images,
     package_linked_images,
+    plan_illustrator_native_local,
     render_preview,
     semantic_diff,
 )
@@ -79,9 +82,12 @@ def test_used_layer1_public_api_remains_available() -> None:
     assert {
         *(value.__name__ for value in public_types),
         "CmykColor",
+        "apply_illustrator_native_local",
         "compile_native_ai",
+        "inspect_illustrator_native_local",
         "iter_linked_images",
         "package_linked_images",
+        "plan_illustrator_native_local",
         "render_preview",
         "semantic_diff",
     } <= set(py_ai_illustrator.__all__)
@@ -99,6 +105,21 @@ def test_used_layer1_public_api_remains_available() -> None:
         "timeout",
     }
     assert set(inspect.signature(run_illustrator_test).parameters) >= {"source", "timeout"}
+    assert set(inspect.signature(inspect_illustrator_native_local).parameters) >= {
+        "source",
+        "timeout",
+    }
+    assert set(inspect.signature(plan_illustrator_native_local).parameters) >= {
+        "source",
+        "manifest",
+        "timeout",
+    }
+    assert set(inspect.signature(apply_illustrator_native_local).parameters) >= {
+        "source",
+        "manifest",
+        "output",
+        "timeout",
+    }
     assert callable(iter_linked_images)
     assert callable(package_linked_images)
     assert callable(semantic_diff)
