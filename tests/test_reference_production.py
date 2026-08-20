@@ -6,6 +6,7 @@ import pytest
 from examples.quarterly_kpi_report.cli import PRODUCTION_CONTRACT
 from examples.quarterly_kpi_report.document import build_document
 from examples.quarterly_kpi_report.input import DEFAULT_INPUT, load_report_input
+from illustrator_agent import InputValidationError
 from illustrator_agent.production import verify_reference_document
 
 
@@ -25,8 +26,34 @@ def test_input_rejects_a_non_boolean_variant(tmp_path: Path) -> None:
     invalid = tmp_path / "invalid.json"
     invalid.write_text(json.dumps(raw), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="metric.positive"):
+    with pytest.raises(InputValidationError) as caught:
         load_report_input(invalid)
+
+    assert caught.value.path == "$.metrics[0].positive"
+
+
+def test_input_rejects_a_cross_field_chart_mismatch(tmp_path: Path) -> None:
+    raw = json.loads(DEFAULT_INPUT.read_text(encoding="utf-8"))
+    raw["chart"]["values"].pop()
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(InputValidationError) as caught:
+        load_report_input(invalid)
+
+    assert caught.value.path == "$.chart"
+
+
+def test_input_rejects_the_wrong_metric_count(tmp_path: Path) -> None:
+    raw = json.loads(DEFAULT_INPUT.read_text(encoding="utf-8"))
+    raw["metrics"].pop()
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(InputValidationError) as caught:
+        load_report_input(invalid)
+
+    assert caught.value.path == "$.metrics"
 
 
 def test_pure_gate_validates_determinism_ir_and_contract() -> None:

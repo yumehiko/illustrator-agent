@@ -1,14 +1,14 @@
 # ロードマップ
 
-更新日: 2026-08-19
+更新日: 2026-08-20
 
 ## 現在地
 
-M1 reference productionと新規制作のnative-first移行は完了しました。`quarterly_kpi_report`は明示的な`DocumentContext`とimmutableなnamed-role `DesignTheme`からdirect native compileします。
+M1 reference productionと新規制作のnative-first移行に加え、外部入力を検証済みdomain inputへ変換する再利用可能なcontractと`quarterly_kpi_report`の移行が完了しました。
 
 ## M2: デザインモデルの拡張
 
-次はreference productionに残るad-hocな入力validationを第2層の再利用可能な契約へ移します。その後、必要になった順にfont-aware layout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
+次は必要になった順にfont-aware layout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
 
 ## M3: 一般性の確認
 
