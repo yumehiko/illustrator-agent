@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+
+from illustrator_agent import (
+    array_contract,
+    boolean,
+    field,
+    finite_number,
+    non_empty_string,
+    object_contract,
+)
 
 DEFAULT_INPUT = Path(__file__).parents[1] / "quarterly-kpi-report.json"
 
@@ -53,71 +60,48 @@ class ReportInput:
             raise ValueError("Chart values and target must be finite")
 
 
-def _mapping(value: Any, *, name: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{name} must be an object")
-    return value
+_metric_contract = object_contract(
+    {
+        "label": non_empty_string(),
+        "value": non_empty_string(),
+        "change": non_empty_string(),
+        "positive": field(boolean(), default=True),
+    }
+).map(lambda values: Metric(**values))
 
+_chart_contract = (
+    object_contract(
+        {
+            "labels": array_contract(non_empty_string()),
+            "values": array_contract(finite_number()),
+            "target": finite_number(),
+        }
+    )
+    .refine(
+        lambda values: len(values["labels"]) == len(values["values"])
+        and len(values["values"]) >= 2,
+        "labels and values must match and contain at least two points",
+    )
+    .map(lambda values: ChartInput(**values))
+)
 
-def _sequence(value: Any, *, name: str) -> Sequence[Any]:
-    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
-        raise ValueError(f"{name} must be an array")
-    return value
-
-
-def _string(value: Any, *, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
-def _number(value: Any, *, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{name} must be a number")
-    result = float(value)
-    if not math.isfinite(result):
-        raise ValueError(f"{name} must be finite")
-    return result
-
-
-def _boolean(value: Any, *, name: str) -> bool:
-    if not isinstance(value, bool):
-        raise ValueError(f"{name} must be a boolean")
-    return value
+_report_contract = object_contract(
+    {
+        "period": non_empty_string(),
+        "title": non_empty_string(),
+        "metrics": array_contract(_metric_contract).refine(
+            lambda metrics: len(metrics) == 3,
+            "must contain exactly three metrics",
+        ),
+        "chart": _chart_contract,
+        "source": non_empty_string(),
+        "refreshed": non_empty_string(),
+    }
+).map(lambda values: ReportInput(**values))
 
 
 def load_report_input(path: str | Path = DEFAULT_INPUT) -> ReportInput:
     """Load and validate the explicit production input."""
 
-    raw = _mapping(json.loads(Path(path).read_text(encoding="utf-8")), name="report input")
-    metrics = tuple(
-        Metric(
-            label=_string(item.get("label"), name="metric.label"),
-            value=_string(item.get("value"), name="metric.value"),
-            change=_string(item.get("change"), name="metric.change"),
-            positive=_boolean(item.get("positive", True), name="metric.positive"),
-        )
-        for value in _sequence(raw.get("metrics"), name="metrics")
-        for item in [_mapping(value, name="metric")]
-    )
-    chart = _mapping(raw.get("chart"), name="chart")
-    labels = tuple(
-        _string(value, name="chart label")
-        for value in _sequence(chart.get("labels"), name="chart.labels")
-    )
-    values = tuple(
-        _number(value, name="chart value")
-        for value in _sequence(chart.get("values"), name="chart.values")
-    )
-    return ReportInput(
-        period=_string(raw.get("period"), name="period"),
-        title=_string(raw.get("title"), name="title"),
-        metrics=metrics,
-        chart=ChartInput(
-            labels=labels,
-            values=values,
-            target=_number(chart.get("target"), name="chart.target"),
-        ),
-        source=_string(raw.get("source"), name="source"),
-        refreshed=_string(raw.get("refreshed"), name="refreshed"),
-    )
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    return _report_contract.validate(raw)
