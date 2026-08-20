@@ -46,4 +46,4 @@ linked imageの第2層APIはintrinsic dimensions、target box、fit policy、ali
 
 ## 第3層との境界
 
-第3層は自然言語と素材から、この層のPythonモデルまたは検証可能な入力データを作る薄いworkflowです。第2層の完成条件が安定するまで本格実装を延期し、第三層専用のデザイン表現は増やしません。
+第3層は自然言語と素材から、この層のPythonモデルまたは検証可能な入力データを作る薄いworkflowです。第三層専用のデザイン表現は増やしません。

@@ -28,7 +28,11 @@ source of truth.
    keys, never list position; reject duplicate or invalid keys.
 3. Declare font PostScript names and layout evidence where typography depends on them. Treat
    approximate measurement as insufficient for fail-closed production. Declare whether linked
-   images remain linked and resolve their sources relative to the production source.
+   images remain linked and resolve their sources relative to the production source. Font catalog
+   availability does not prove glyph coverage: if native compile or reopen reports substitution or
+   a font mismatch, fail the gate. Before rerunning, explicitly resolve as a user requirement
+   whether to change the font requirement, copy, or intended fallback policy; do not silently
+   substitute a font.
 4. Build a deterministic editable `Document` through public design-model APIs. Keep composition,
    geometry, typography, layout, and tables in their existing responsibility boundaries.
 5. Define a `ProductionContract` with canvas/layers/counts, required identities and group names,
