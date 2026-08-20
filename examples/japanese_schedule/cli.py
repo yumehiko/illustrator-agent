@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 from pathlib import Path
 
-from illustrator_agent.production import ProductionContract, compile_reference_production
+from examples.production_runner import ProductionRun, run_production_cli
+from illustrator_agent.production import ProductionContract
 
 from .document import DOCUMENT_SOURCE, build_document, build_layout_report
 from .input import DEFAULT_INPUT, load_schedule_input
@@ -40,30 +39,21 @@ PRODUCTION_CONTRACT = ProductionContract(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--accept-visual-by")
-    parser.add_argument("--timeout", type=float, default=120.0)
-    args = parser.parse_args(argv)
-    schedule = load_schedule_input(args.input)
-    result = compile_reference_production(
-        lambda: build_document(schedule),
-        source=DOCUMENT_SOURCE,
-        input_data=args.input,
-        output_directory=args.output_dir,
-        contract=PRODUCTION_CONTRACT,
-        text_layout_report=build_layout_report(schedule),
-        visual_accepted_by=args.accept_visual_by,
-        force=args.force,
-        timeout=args.timeout,
-    )
-    print(
-        json.dumps(
-            {"status": result["status"], "report": result["report_path"]},
-            ensure_ascii=False,
-            indent=2,
+    def prepare(input_path: Path | None) -> ProductionRun:
+        assert input_path is not None
+        schedule = load_schedule_input(input_path)
+        return ProductionRun(
+            build_document=lambda: build_document(schedule),
+            source=DOCUMENT_SOURCE,
+            input_data=input_path,
+            contract=PRODUCTION_CONTRACT,
+            text_layout_report=build_layout_report(schedule),
         )
+
+    return run_production_cli(
+        description=__doc__,
+        default_input=DEFAULT_INPUT,
+        default_output=DEFAULT_OUTPUT,
+        prepare=prepare,
+        argv=argv,
     )
-    return 0 if result["status"] in {"passed", "awaiting-visual-acceptance"} else 1

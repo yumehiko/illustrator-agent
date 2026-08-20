@@ -30,25 +30,34 @@ uv run pytest
 uv run ruff check .
 ```
 
-利用例は`examples/`、設計と完成条件は[design model](docs/design-model.md)、未完了作業は[roadmap](docs/roadmap.md)を参照してください。
+設計と完成条件は[design model](docs/design-model.md)、未完了作業は[roadmap](docs/roadmap.md)を参照してください。
 
-## Reference production
+## Examples
 
-`quarterly_kpi_report`と`japanese_schedule`を、明示的なJSON入力からnative AI、IR、PDF preview、検証reportまで再生成します。通常入口はIllustrator実機を必須とし、direct compileが保存・再open後の意味と編集性を検証します。
+`examples/`は次のproduction gateと最小recipeだけを保持します。production gateはnative AI、IR、PDF preview、検証reportを再生成し、direct compile後の意味と編集性まで検証します。
+
+| 分類 | example | 固有の検証対象 |
+| --- | --- | --- |
+| production gate | `quarterly_kpi_report` | theme、再利用component、chart、point text |
+| production gate | `japanese_schedule` | table、日本語font-aware計測、改行、overflow |
+| production gate | `product_catalog` | linked image、area text、複数artboard |
+| production gate | `campaign_variants` | JSON駆動variant、stable identity、artboard対応 |
+| 最小recipe | `generate_product_swatch` | linked image用の決定的PNG fixture生成 |
 
 ```bash
 uv run python -m examples.quarterly_kpi_report
 uv run python -m examples.japanese_schedule
 uv run python -m examples.product_catalog
-```
-
-日本語制作物はfont-aware measurement evidenceを明示入力として要求し、近似計測だけではoverflowを合格させません。`product_catalog`はcommit済みの決定的なPNG fixtureを変更せずに読み、`contain`配置したlinked image、editable area text、2 artboardを検証します。fixtureの生成手順は`uv run python -m examples.generate_product_swatch --output <new-path>`で明示的に実行し、既存fileは上書きしません。成果物は`build/`以下へ出力します。同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。Illustrator不要のIR生成・determinism・契約検証は通常の`pytest`、実機gateは`RUN_ILLUSTRATOR_TESTS=1 uv run pytest tests/illustrator`で分離して実行します。
-
-semantic keyから入力順に依存しないcomponent identityを割り当て、square、portrait、bannerの3 artboardを生成するデータ駆動productionも同じgateを使います。
-
-```bash
 uv run python -m examples.campaign_variants
 ```
+
+日本語制作物はfont-aware measurement evidenceを明示入力として要求し、近似計測だけではoverflowを合格させません。`product_catalog`はcommit済みPNGを変更せずに読みます。fixtureを再生成して比較する最小recipeも出力先を`build/`に限定し、既存fileは上書きしません。
+
+```bash
+uv run python -m examples.generate_product_swatch
+```
+
+全exampleの既定出力は`build/`以下です。productionを同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。Illustrator不要のIR生成・determinism・契約検証は通常の`pytest`、実機gateは`RUN_ILLUSTRATOR_TESTS=1 uv run pytest tests/illustrator`で分離して実行します。
 
 ## ライセンス
 

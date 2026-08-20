@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 from pathlib import Path
 
 from py_ai_illustrator.model import LinkedImage
 
+from examples.production_runner import ProductionRun, run_production_cli
 from illustrator_agent.production import (
     ProductionAreaText,
     ProductionArtboard,
     ProductionContract,
     ProductionLinkedImage,
-    compile_reference_production,
 )
 
 from .components import LANDSCAPE, PORTRAIT, landscape_image, portrait_image
@@ -110,27 +108,18 @@ PRODUCTION_CONTRACT = ProductionContract(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--accept-visual-by")
-    parser.add_argument("--timeout", type=float, default=120.0)
-    args = parser.parse_args(argv)
-    result = compile_reference_production(
-        build_document,
-        source=DOCUMENT_SOURCE,
-        input_data=LINK,
-        output_directory=args.output_dir,
-        contract=PRODUCTION_CONTRACT,
-        visual_accepted_by=args.accept_visual_by,
-        force=args.force,
-        timeout=args.timeout,
-    )
-    print(
-        json.dumps(
-            {"status": result["status"], "report": result["report_path"]},
-            ensure_ascii=False,
-            indent=2,
+    def prepare(input_path: Path | None) -> ProductionRun:
+        assert input_path is None
+        return ProductionRun(
+            build_document=build_document,
+            source=DOCUMENT_SOURCE,
+            input_data=LINK,
+            contract=PRODUCTION_CONTRACT,
         )
+
+    return run_production_cli(
+        description=__doc__,
+        default_output=DEFAULT_OUTPUT,
+        prepare=prepare,
+        argv=argv,
     )
-    return 0 if result["status"] in {"passed", "awaiting-visual-acceptance"} else 1

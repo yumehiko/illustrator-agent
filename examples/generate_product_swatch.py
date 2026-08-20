@@ -7,6 +7,10 @@ import struct
 import zlib
 from pathlib import Path
 
+from examples import BUILD_ROOT
+
+DEFAULT_OUTPUT = BUILD_ROOT / "fixtures" / "product-swatch.png"
+
 
 def product_swatch_png(*, width: int = 320, height: int = 220) -> bytes:
     rows = bytearray()
@@ -39,8 +43,10 @@ def product_swatch_png(*, width: int = 320, height: int = 220) -> bytes:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)
+    if not args.output.resolve().is_relative_to(BUILD_ROOT.resolve()):
+        raise ValueError(f"fixture output must be under {BUILD_ROOT}")
     if args.output.exists():
         raise FileExistsError(f"refusing to overwrite existing fixture: {args.output}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
