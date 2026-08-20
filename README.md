@@ -40,6 +40,29 @@ uv run --no-sync pytest
 
 [`edit-illustrator`](skills/edit-illustrator/SKILL.md)は、編集可能なIllustrator成果物の制作・局所編集に使います。Codexへ依頼するときは、たとえば「`$edit-illustrator` を使い、JSONから再生成できる2 artboardの制作物を作成して」のように起動します。
 
+### 暫定インストール
+
+試験運用中はリポジトリ全体を実行環境として使うため、checkoutを保持したままskill directoryをCodexのユーザーskillへsymlinkします。Git、[uv](https://docs.astral.sh/uv/)、Codexが必要です。Illustrator実機gateを実行する場合は、ライセンス済みのAdobe Illustrator 2026も必要です。
+
+```bash
+git clone https://github.com/yumehiko/illustrator-agent.git
+cd illustrator-agent
+uv sync --locked
+mkdir -p "$HOME/.agents/skills"
+ln -s "$PWD/skills/edit-illustrator" "$HOME/.agents/skills/edit-illustrator"
+```
+
+同名のpathがすでに存在する場合、`ln`は上書きせず失敗します。既存の導入先を確認してから明示的に切り替えてください。インストール後はこのcheckoutを移動・削除せず、Codexでリポジトリrootを開きます。skillが表示されない場合はCodexを再起動してください。
+
+更新時は同じcheckoutで次を実行します。symlinkはそのまま利用できます。
+
+```bash
+git pull --ff-only
+uv sync --locked
+```
+
+Illustratorを使わないpure gateまでは、Illustrator未導入でも実行できます。
+
 - 新規制作・variant・大幅な再設計は、Python source、検証済み入力、`ProductionContract`をsource of truthとしてpure gateからnative gateへ進みます。
 - 既存`.ai`の限定変更は元ファイルをsource of truthとし、`inspect -> plan -> apply（別出力）-> validate -> diff`で確認します。
 
