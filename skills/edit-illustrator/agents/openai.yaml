@@ -1,0 +1,6 @@
+interface:
+  display_name: "Edit Illustrator"
+  short_description: "Create or safely patch editable Illustrator artwork"
+  default_prompt: "Use $edit-illustrator to create or safely patch an editable Illustrator file with production verification."
+policy:
+  allow_implicit_invocation: true
