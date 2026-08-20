@@ -1,0 +1,169 @@
+{
+  "title": "Pythonでつくる日本語イベント日程",
+  "font": {
+    "postscript_name": "KozGoPr6N-Regular",
+    "family": "小塚ゴシック Pr6N",
+    "style": "R",
+    "header_size": 12,
+    "body_size": 11,
+    "header_tracking": 0,
+    "body_tracking": 0
+  },
+  "rows": [
+    {
+      "time": "09:00",
+      "category": "開場",
+      "description": "受付を開始します。資料を受け取って会場へお進みください。"
+    },
+    {
+      "time": "10:00",
+      "category": "基調講演",
+      "description": "PythonとIllustratorをつなぐ、文脈を持ったデザイン制作の考え方",
+      "kind": "featured"
+    },
+    {
+      "time": "13:30",
+      "category": "ワークショップ",
+      "description": "共有スタイルから複数種類の表を生成し、結果を比較します。"
+    },
+    {
+      "time": "17:00",
+      "category": "終了",
+      "description": "生成したAIデータは自由に編集して持ち帰れます。",
+      "kind": "notice"
+    }
+  ],
+  "measurement_provenance": {
+    "method": "adobe-illustrator-point-text-width",
+    "font_aware": true,
+    "source": "Adobe Illustrator 30.7.0"
+  },
+  "measurements": [
+    {
+      "text": "時刻",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 12,
+      "tracking": 0,
+      "width": 24
+    },
+    {
+      "text": "区分",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 12,
+      "tracking": 0,
+      "width": 24
+    },
+    {
+      "text": "内容",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 12,
+      "tracking": 0,
+      "width": 24
+    },
+    {
+      "text": "09:00",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 26.65283203125
+    },
+    {
+      "text": "開場",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 22
+    },
+    {
+      "text": "受付を開始します。資料を受け取って会場へお進みく",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 264
+    },
+    {
+      "text": "ださい。",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 38.5
+    },
+    {
+      "text": "10:00",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 26.64208984375
+    },
+    {
+      "text": "基調講演",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 44
+    },
+    {
+      "text": "PythonとIllustratorをつなぐ、文脈を持ったデザイン制",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 277.541015625
+    },
+    {
+      "text": "作の考え方",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 55
+    },
+    {
+      "text": "13:30",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 26.64208984375
+    },
+    {
+      "text": "ワークショップ",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 77
+    },
+    {
+      "text": "共有スタイルから複数種類の表を生成し、結果を比較",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 264
+    },
+    {
+      "text": "します。",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 38.5
+    },
+    {
+      "text": "17:00",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 26.64208984375
+    },
+    {
+      "text": "終了",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 22
+    },
+    {
+      "text": "生成したAIデータは自由に編集して持ち帰れます。",
+      "font_postscript_name": "KozGoPr6N-Regular",
+      "font_size": 11,
+      "tracking": 0,
+      "width": 252.009765625
+    }
+  ]
+}

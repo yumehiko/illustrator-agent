@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from py_ai_illustrator.model import Color, ProcessColor, TextFrame
 
 from .composition import RenderedComponent
-from .text_layout import wrap_text_approximately
+from .text_layout import OverflowPolicy, TextLayoutResult, TextMeasurer, evaluate_text_layout
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +57,8 @@ class TextBlock:
     alignment: str = "left"
     wrap: bool = True
     name: str | None = None
+    text_measurer: TextMeasurer | None = None
+    overflow_policy: OverflowPolicy = OverflowPolicy.PROVISIONAL
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -65,16 +67,32 @@ class TextBlock:
             raise ValueError("A text block width must be positive")
         if self.alignment not in {"left", "center", "right"}:
             raise ValueError("alignment must be 'left', 'center', or 'right'")
+        if not isinstance(self.overflow_policy, OverflowPolicy):
+            raise TypeError("overflow_policy must be an OverflowPolicy")
+
+    @property
+    def layout_result(self) -> TextLayoutResult:
+        return evaluate_text_layout(
+            self.text,
+            max_width=self.width,
+            font_postscript_name=self.style.font.postscript_name,
+            font_size=self.style.font_size,
+            tracking=self.style.tracking,
+            wrap=self.wrap,
+            measurer=self.text_measurer,
+            policy=self.overflow_policy,
+        )
 
     @property
     def lines(self) -> tuple[str, ...]:
-        if self.wrap:
-            return wrap_text_approximately(
-                self.text,
-                max_width=self.width,
-                font_size=self.style.font_size,
-            )
-        return tuple(self.text.replace("\r\n", "\n").replace("\r", "\n").split("\n"))
+        result = self.layout_result
+        result.require_renderable()
+        return result.lines
+
+    def layout_report(self) -> dict[str, object]:
+        """Return the explicit measurement and overflow decision evidence."""
+
+        return self.layout_result.to_dict()
 
     @property
     def height(self) -> float:

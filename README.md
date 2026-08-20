@@ -34,13 +34,14 @@ uv run ruff check .
 
 ## Reference production
 
-`quarterly_kpi_report`を、明示的なJSON入力からnative AI、IR、PDF preview、検証reportまで再生成します。通常入口はIllustrator実機を必須とし、direct compileが保存・再open後の意味と編集性を検証します。
+`quarterly_kpi_report`と`japanese_schedule`を、明示的なJSON入力からnative AI、IR、PDF preview、検証reportまで再生成します。通常入口はIllustrator実機を必須とし、direct compileが保存・再open後の意味と編集性を検証します。
 
 ```bash
 uv run python -m examples.quarterly_kpi_report
+uv run python -m examples.japanese_schedule
 ```
 
-成果物は`build/m1/`へ出力します。同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。Illustrator不要のIR生成・determinism・契約検証は通常の`pytest`、実機gateは`RUN_ILLUSTRATOR_TESTS=1 uv run pytest tests/illustrator`で分離して実行します。
+日本語制作物はfont-aware measurement evidenceを明示入力として要求し、近似計測だけではoverflowを合格させません。同じ場所へ再生成する場合だけ`--force`を付けます。人間のpreview承認後は`--accept-visual-by "<name>"`を付けると検証reportへ記録できます。Illustrator不要のIR生成・determinism・契約検証は通常の`pytest`、実機gateは`RUN_ILLUSTRATOR_TESTS=1 uv run pytest tests/illustrator`で分離して実行します。
 
 ## ライセンス
 
