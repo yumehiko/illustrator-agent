@@ -10,7 +10,12 @@ from typing import Any
 from py_ai_illustrator.model import Color, Layer, LayerItemRef, Path, Point, ProcessColor, TextFrame
 
 from .composition import RenderedComponent
-from .text_layout import wrap_text_approximately
+from .text_layout import (
+    OverflowPolicy,
+    TextLayoutResult,
+    TextMeasurer,
+    evaluate_text_layout,
+)
 from .typography import FontSpec
 
 CellFormatter = Callable[[Any], str]
@@ -23,6 +28,7 @@ class _TableLayout:
     header_height: float
     row_lines: tuple[tuple[tuple[str, ...], ...], ...]
     row_heights: tuple[float, ...]
+    text_layouts: tuple[tuple[str, TextLayoutResult], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +40,7 @@ class TableColumn:
     width: float
     alignment: str = "left"
     wrap: bool = False
+    provisional_wrap_width: float | None = None
     formatter: CellFormatter | None = None
     accessor: CellAccessor | None = None
 
@@ -44,6 +51,8 @@ class TableColumn:
             raise ValueError("A table column width must be positive")
         if self.alignment not in {"left", "center", "right"}:
             raise ValueError("alignment must be 'left', 'center', or 'right'")
+        if self.provisional_wrap_width is not None and self.provisional_wrap_width <= 0:
+            raise ValueError("provisional_wrap_width must be positive")
 
     def text_for(self, row: Mapping[str, Any]) -> str:
         value = self.accessor(row) if self.accessor is not None else row.get(self.key, "")
@@ -100,6 +109,8 @@ class Table:
     rows: Sequence[Mapping[str, Any]]
     style: TableStyle = field(default_factory=TableStyle)
     variant_key: str | None = None
+    text_measurer: TextMeasurer | None = None
+    overflow_policy: OverflowPolicy = OverflowPolicy.PROVISIONAL
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -109,20 +120,39 @@ class Table:
         keys = [column.key for column in self.columns]
         if len(set(keys)) != len(keys):
             raise ValueError("Table column keys must be unique")
+        if not isinstance(self.overflow_policy, OverflowPolicy):
+            raise TypeError("overflow_policy must be an OverflowPolicy")
 
     @property
     def width(self) -> float:
         return sum(column.width for column in self.columns)
 
     def _layout(self) -> _TableLayout:
-        def lines_for(column: TableColumn, value: str, font_size: float) -> tuple[str, ...]:
-            if not column.wrap:
-                return tuple(value.replace("\r\n", "\n").replace("\r", "\n").split("\n"))
-            return wrap_text_approximately(
+        text_layouts: list[tuple[str, TextLayoutResult]] = []
+
+        def lines_for(
+            location: str,
+            column: TableColumn,
+            value: str,
+            *,
+            font: FontSpec,
+            font_size: float,
+            tracking: float,
+        ) -> tuple[str, ...]:
+            result = evaluate_text_layout(
                 value,
                 max_width=max(column.width - 2 * self.style.padding_x, 1.0),
+                font_postscript_name=font.postscript_name,
                 font_size=font_size,
+                tracking=tracking,
+                wrap=column.wrap,
+                provisional_wrap_width=column.provisional_wrap_width,
+                measurer=self.text_measurer,
+                policy=self.overflow_policy,
             )
+            text_layouts.append((location, result))
+            result.require_renderable()
+            return result.lines
 
         def required_height(lines: Sequence[Sequence[str]], size: float) -> float:
             count = max((len(cell) for cell in lines), default=1)
@@ -130,7 +160,15 @@ class Table:
             return content + 2 * self.style.padding_y
 
         header_lines = tuple(
-            lines_for(column, column.title, self.style.header_font_size) for column in self.columns
+            lines_for(
+                f"header.{column.key}",
+                column,
+                column.title,
+                font=self.style.header_font,
+                font_size=self.style.header_font_size,
+                tracking=self.style.header_tracking,
+            )
+            for column in self.columns
         )
         header_height = max(
             self.style.header_height,
@@ -138,16 +176,77 @@ class Table:
         )
         row_lines = tuple(
             tuple(
-                lines_for(column, column.text_for(row), self.style.body_font_size)
+                lines_for(
+                    f"row-{row_index}.{column.key}",
+                    column,
+                    column.text_for(row),
+                    font=self.style.body_font,
+                    font_size=self.style.body_font_size,
+                    tracking=self.style.body_tracking,
+                )
                 for column in self.columns
             )
-            for row in self.rows
+            for row_index, row in enumerate(self.rows)
         )
         row_heights = tuple(
             max(self.style.row_height, required_height(lines, self.style.body_font_size))
             for lines in row_lines
         )
-        return _TableLayout(header_lines, header_height, row_lines, row_heights)
+        return _TableLayout(
+            header_lines,
+            header_height,
+            row_lines,
+            row_heights,
+            tuple(text_layouts),
+        )
+
+    def layout_report(self) -> dict[str, object]:
+        """Return serializable measurement evidence for every rendered cell."""
+
+        layout = self._layout()
+        results = [result for _, result in layout.text_layouts]
+        statuses = {result.status for result in results}
+        if "rejected-overflow" in statuses:
+            status = "rejected-overflow"
+        elif "rejected-unverified" in statuses:
+            status = "rejected-unverified"
+        elif "provisional" in statuses:
+            status = "provisional"
+        else:
+            status = "verified-fit"
+
+        def cell_report(location: str, result: TextLayoutResult) -> dict[str, object]:
+            report = result.to_dict()
+            lines = report["lines"]
+            assert isinstance(lines, list)
+            report["lines"] = [
+                {
+                    "text_id": (
+                        f"{self.id}.{location}.line-{index}"
+                        if len(lines) > 1
+                        else f"{self.id}.{location}"
+                    ),
+                    **line,
+                }
+                for index, line in enumerate(lines)
+            ]
+            return {"location": location, **report}
+
+        return {
+            "status": status,
+            "policy": self.overflow_policy.value,
+            "font_postscript_names": sorted(
+                {
+                    name
+                    for result in results
+                    for name in result.font_postscript_names
+                }
+            ),
+            "cells": [
+                cell_report(location, result)
+                for location, result in layout.text_layouts
+            ],
+        }
 
     @property
     def height(self) -> float:

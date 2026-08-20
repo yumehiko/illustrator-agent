@@ -4,15 +4,15 @@
 
 ## 現在地
 
-M1 reference productionと新規制作のnative-first移行に加え、外部入力を検証済みdomain inputへ変換する再利用可能なcontractと`quarterly_kpi_report`の移行が完了しました。
+M1 reference production、新規制作のnative-first移行、再利用可能な入力contractは完了しました。provenance付きfont-aware layout / fail-closed overflow APIと日本語scheduleのpure gateは実装済みです。
 
 ## M2: デザインモデルの拡張
 
-次は必要になった順にfont-aware layout / overflow、component identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
+次は必要になった順にcomponent identity、image fitting、複数artboard等を追加します。先回りした機能網羅は行いません。
 
 ## M3: 一般性の確認
 
-日本語文字組み、データ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
+日本語scheduleは、指定fontの利用可否、native compile/reopen、PDF preview、visual acceptanceのIllustrator実機gateが未完了です。完了後、データ駆動variant、image / area text / 複数artboardを代表する異なる制作物で同じ完成条件を通します。
 
 ## M4: 第3層
 

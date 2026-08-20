@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from py_ai_illustrator.illustrator import list_illustrator_fonts
 from py_ai_illustrator.model import Document, Group
 from py_ai_illustrator.native import compile_native_ai
 from py_ai_illustrator.semantic import semantic_diff
@@ -31,6 +32,17 @@ class ProductionContract:
     required_ids: tuple[str, ...]
     required_group_names: tuple[str, ...]
     visual_acceptance: tuple[str, ...]
+    required_fonts: tuple[str, ...] = ()
+    require_verified_text_layout: bool = False
+
+    def __post_init__(self) -> None:
+        if len(set(self.required_fonts)) != len(self.required_fonts):
+            raise ValueError("Production contract required fonts must be unique")
+        if any(
+            not name or any(character.isspace() for character in name)
+            for name in self.required_fonts
+        ):
+            raise ValueError("Production contract fonts must use PostScript names")
 
 
 def _sha256(path: Path) -> str:
@@ -76,6 +88,20 @@ def _document_evidence(document: Document) -> dict[str, Any]:
         *(text.id for text in texts),
         *(image.id for image in images),
     }
+    point_text_signatures = sorted(
+        (
+            {
+                "id": text.id,
+                "text": text.text,
+                "font_postscript_name": text.native_font_name or text.font_name,
+                "font_size": text.font_size,
+                "tracking": text.tracking,
+            }
+            for text in texts
+            if text.area_width is None
+        ),
+        key=lambda signature: signature["id"],
+    )
     return {
         "width": document.width,
         "height": document.height,
@@ -85,13 +111,87 @@ def _document_evidence(document: Document) -> dict[str, Any]:
         "group_count": len(groups),
         "linked_image_count": len(images),
         "group_names": [group.name for group in groups],
+        "font_postscript_names": sorted(
+            {text.native_font_name or text.font_name for text in texts}
+        ),
+        "point_text_count": len(point_text_signatures),
+        "point_text_signatures": point_text_signatures,
         "ids": sorted(ids),
     }
 
 
-def _contract_checks(evidence: dict[str, Any], contract: ProductionContract) -> dict[str, bool]:
+def _verified_layout_signatures(
+    text_layout_report: Mapping[str, Any] | None,
+) -> list[dict[str, Any]] | None:
+    if text_layout_report is None or text_layout_report.get("status") != "verified-fit":
+        return None
+    if text_layout_report.get("policy") != "fail-closed":
+        return None
+    cells = text_layout_report.get("cells")
+    if not isinstance(cells, list) or not cells:
+        return None
+
+    signatures: list[dict[str, Any]] = []
+    for cell in cells:
+        if (
+            not isinstance(cell, dict)
+            or cell.get("status") != "verified-fit"
+            or cell.get("policy") != "fail-closed"
+        ):
+            return None
+        lines = cell.get("lines")
+        if not isinstance(lines, list) or not lines:
+            return None
+        for line in lines:
+            if not isinstance(line, dict) or line.get("status") != "verified-fit":
+                return None
+            text_id = line.get("text_id")
+            measurement = line.get("measurement")
+            if not isinstance(text_id, str) or not text_id or not isinstance(measurement, dict):
+                return None
+            provenance = measurement.get("provenance")
+            request = measurement.get("request")
+            if (
+                not isinstance(provenance, dict)
+                or provenance.get("font_aware") is not True
+                or not isinstance(request, dict)
+            ):
+                return None
+            required = ("value", "font_postscript_name", "font_size", "tracking")
+            if any(field not in request for field in required):
+                return None
+            if (
+                not isinstance(request["value"], str)
+                or not isinstance(request["font_postscript_name"], str)
+                or isinstance(request["font_size"], bool)
+                or not isinstance(request["font_size"], (int, float))
+                or isinstance(request["tracking"], bool)
+                or not isinstance(request["tracking"], (int, float))
+            ):
+                return None
+            signatures.append(
+                {
+                    "id": text_id,
+                    "text": request["value"],
+                    "font_postscript_name": request["font_postscript_name"],
+                    "font_size": request["font_size"],
+                    "tracking": request["tracking"],
+                }
+            )
+    if len({signature["id"] for signature in signatures}) != len(signatures):
+        return None
+    return sorted(signatures, key=lambda signature: signature["id"])
+
+
+def _contract_checks(
+    evidence: dict[str, Any],
+    contract: ProductionContract,
+    text_layout_report: Mapping[str, Any] | None,
+) -> dict[str, bool]:
     ids = set(evidence["ids"])
     group_names = set(evidence["group_names"])
+    layout_signatures = _verified_layout_signatures(text_layout_report)
+    layout_verified = layout_signatures == evidence["point_text_signatures"]
     return {
         "canvas_dimensions": (evidence["width"], evidence["height"])
         == (contract.width, contract.height),
@@ -101,11 +201,22 @@ def _contract_checks(evidence: dict[str, Any], contract: ProductionContract) -> 
         "group_count": evidence["group_count"] == contract.group_count,
         "required_ids": set(contract.required_ids) <= ids,
         "required_group_names": set(contract.required_group_names) <= group_names,
+        "required_fonts_declared": set(contract.required_fonts)
+        <= set(evidence["font_postscript_names"]),
+        "text_layout_verified": not contract.require_verified_text_layout
+        or (
+            layout_verified
+            and text_layout_report is not None
+            and set(contract.required_fonts)
+            <= set(text_layout_report.get("font_postscript_names", ()))
+        ),
     }
 
 
 def _evaluate_reference_document(
-    build_document: DocumentFactory, contract: ProductionContract
+    build_document: DocumentFactory,
+    contract: ProductionContract,
+    text_layout_report: Mapping[str, Any] | None = None,
 ) -> tuple[Document, dict[str, Any]]:
     document = build_document()
     repeated = build_document()
@@ -117,7 +228,7 @@ def _evaluate_reference_document(
     checks = {
         "source_is_deterministic": source_determinism.equal,
         "ir_json_roundtrip": ir_roundtrip.equal,
-        **_contract_checks(evidence, contract),
+        **_contract_checks(evidence, contract, text_layout_report),
     }
     return document, {
         "status": "passed" if all(checks.values()) else "failed",
@@ -125,15 +236,19 @@ def _evaluate_reference_document(
         "document_evidence": evidence,
         "source_determinism": source_determinism.to_dict(),
         "ir_json_roundtrip": ir_roundtrip.to_dict(),
+        "text_layout": dict(text_layout_report) if text_layout_report is not None else None,
     }
 
 
 def verify_reference_document(
-    build_document: DocumentFactory, *, contract: ProductionContract
+    build_document: DocumentFactory,
+    *,
+    contract: ProductionContract,
+    text_layout_report: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the pure Document, determinism, IR roundtrip, and contract gate."""
 
-    _, evidence = _evaluate_reference_document(build_document, contract)
+    _, evidence = _evaluate_reference_document(build_document, contract, text_layout_report)
     return evidence
 
 
@@ -171,6 +286,7 @@ def compile_reference_production(
     input_data: str | Path,
     output_directory: str | Path,
     contract: ProductionContract,
+    text_layout_report: Mapping[str, Any] | None = None,
     visual_accepted_by: str | None = None,
     force: bool = False,
     timeout: float = 120.0,
@@ -190,7 +306,11 @@ def compile_reference_production(
         raise ValueError("visual_accepted_by must not be empty")
 
     artifacts = _prepare_artifacts(output_path, contract.production_id, force=force)
-    document, pure = _evaluate_reference_document(build_document, contract)
+    document, pure = _evaluate_reference_document(
+        build_document,
+        contract,
+        text_layout_report,
+    )
     artifacts["ir"].write_text(
         json.dumps(document.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -198,7 +318,27 @@ def compile_reference_production(
 
     compile_result: dict[str, Any] = {"status": "not-run"}
     preview_result: dict[str, Any] | None = None
-    if pure["status"] == "passed":
+    font_result: dict[str, Any] = {
+        "status": "not-run" if contract.required_fonts else "not-required",
+        "required": list(contract.required_fonts),
+        "missing": [],
+        "error": None,
+    }
+    if pure["status"] == "passed" and contract.required_fonts:
+        raw_font_result = list_illustrator_fonts(
+            query=contract.required_fonts[0] if len(contract.required_fonts) == 1 else None,
+            required=contract.required_fonts,
+            timeout=min(timeout, 30.0),
+        )
+        font_result = {
+            "status": raw_font_result.get("status"),
+            "illustrator_version": raw_font_result.get("illustrator_version"),
+            "required": list(contract.required_fonts),
+            "missing": raw_font_result.get("missing", []),
+            "error": raw_font_result.get("error"),
+        }
+    fonts_available = font_result["status"] in {"passed", "not-required"}
+    if pure["status"] == "passed" and fonts_available:
         compile_result = compile_native_ai(
             document,
             artifacts["native_ai"],
@@ -219,6 +359,7 @@ def compile_reference_production(
         and bool(compile_result.get("illustrator", {}).get("ok")),
         "pdf_preview_created": preview_result is not None
         and artifacts["native_preview"].is_file(),
+        "requested_fonts_available": fonts_available,
     }
     visual = {
         "status": "passed" if visual_accepted_by is not None else "pending",
@@ -259,6 +400,7 @@ def compile_reference_production(
             "checks": native_checks,
             "compile": compile_result,
             "preview": preview_result,
+            "fonts": font_result,
         },
         "visual_acceptance": visual,
     }

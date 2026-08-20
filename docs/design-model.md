@@ -21,9 +21,11 @@
 5. flatten、outline、font置換等の損失を黙って行わない。
 6. textを含む非rigid transform等、意味が未定義な操作は拒否する。
 
-制約は製品要件、第1層IR/backendの現在の能力限界、determinism・editability・fail-closed等の安全性保証へ分類します。現在の文字幅計算はfont engineを使わない決定的な近似であり、正確なoverflow保証ではありません。text/imageの非rigid transform拒否も現行IR/backendの能力限界で、恒久的な製品制約ではありません。
+制約は製品要件、第1層IR/backendの現在の能力限界、determinism・editability・fail-closed等の安全性保証へ分類します。組版判断はtext、PostScript font名、size、trackingと計測method/sourceを一体のevidenceとして扱います。決定的な近似はprovisional wrapに限り、font-awareではない結果を`verified-fit`へ昇格させません。fail-closed productionは外部のfont-aware measurement evidenceとの完全一致を要求し、不足、条件違い、overflowを拒否します。font計測やIllustrator DOM処理自体は第1層の責務であり、この層は記録済み結果の契約とlayout policyだけを所有します。
 
-pure gateは`Document`生成、JSON往復、determinism、production contractをIllustratorなしで検証します。native compile、保存・再open後のsemantic/editability、PDF preview、visual acceptanceはIllustrator実機gateとして分離します。
+text/imageの非rigid transform拒否は現行IR/backendの能力限界で、恒久的な製品制約ではありません。
+
+pure gateは`Document`生成、JSON往復、determinism、production contractと記録済みlayout evidenceをIllustratorなしで検証します。native compile、指定fontの利用可否、保存・再open後のsemantic/editability、PDF preview、visual acceptanceはIllustrator実機gateとして分離します。
 
 ## 完成条件
 

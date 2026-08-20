@@ -1,7 +1,16 @@
 import pytest
 from py_ai_illustrator.model import Color
 
-from illustrator_agent import Table, TableColumn, TableStyle
+from illustrator_agent import (
+    MeasurementProvenance,
+    OverflowPolicy,
+    RecordedTextMeasurer,
+    Table,
+    TableColumn,
+    TableStyle,
+    TextMeasurement,
+    TextMeasureRequest,
+)
 
 
 def test_table_compiles_semantics_to_editable_paths_and_text() -> None:
@@ -99,3 +108,39 @@ def test_table_requires_unique_columns() -> None:
             columns=[TableColumn("name", "First", 80), TableColumn("name", "Second", 80)],
             rows=[],
         )
+
+
+def test_table_reports_font_aware_fail_closed_layout_evidence() -> None:
+    provenance = MeasurementProvenance("font-bounds", True, "test fixture")
+    measurements = RecordedTextMeasurer(
+        (
+            TextMeasurement(
+                TextMeasureRequest("内容", "Helvetica-Bold", 11, 0),
+                20,
+                provenance,
+            ),
+            TextMeasurement(
+                TextMeasureRequest("日本語", "Helvetica", 10, 0),
+                30,
+                provenance,
+            ),
+        )
+    )
+    table = Table(
+        id="verified",
+        columns=[TableColumn("description", "内容", 80, wrap=True)],
+        rows=[{"description": "日本語"}],
+        text_measurer=measurements,
+        overflow_policy=OverflowPolicy.FAIL_CLOSED,
+    )
+
+    report = table.layout_report()
+
+    assert report["status"] == "verified-fit"
+    assert report["font_postscript_names"] == ["Helvetica", "Helvetica-Bold"]
+    assert report["cells"][1]["lines"][0]["text_id"] == "verified.row-0.description"
+    assert report["cells"][1]["lines"][0]["measurement"]["provenance"] == {
+        "method": "font-bounds",
+        "font_aware": True,
+        "source": "test fixture",
+    }
