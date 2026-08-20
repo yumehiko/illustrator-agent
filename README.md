@@ -2,7 +2,7 @@
 
 編集可能なAdobe Illustrator成果物を、意味と再生成規則を持つPythonデザインオブジェクトから制作するリポジトリです。
 
-現在は第2層（デザインモデル）の確立を優先します。Python componentと入力データから決定的にIRを生成し、兄弟リポジトリ`py-ai-illustrator`のdirect native compilerでIllustrator 2026の編集可能な`.ai`へ変換します。第3層のagent workflow / skillは、第2層が安定してから整備します。
+第2層（デザインモデル）はPython componentと入力データから決定的にIRを生成し、兄弟リポジトリ`py-ai-illustrator`のdirect native compilerでIllustrator 2026の編集可能な`.ai`へ変換します。第3層の`edit-illustrator` skillは、新規制作と既存AIの局所編集を検証可能な経路へ振り分けます。
 
 ```text
 Python component + input data
@@ -35,6 +35,15 @@ uv run --no-sync pytest
 検証commitを更新するときは、公開API互換性testを通したうえで`[tool.uv.sources]`の`rev`と`layer1_compatibility.py`の`LAYER1_COMMIT`を同時に更新し、`uv lock`を実行します。
 
 設計と完成条件は[design model](docs/design-model.md)、未完了作業は[roadmap](docs/roadmap.md)を参照してください。
+
+## Codex skill
+
+[`edit-illustrator`](skills/edit-illustrator/SKILL.md)は、編集可能なIllustrator成果物の制作・局所編集に使います。Codexへ依頼するときは、たとえば「`$edit-illustrator` を使い、JSONから再生成できる2 artboardの制作物を作成して」のように起動します。
+
+- 新規制作・variant・大幅な再設計は、Python source、検証済み入力、`ProductionContract`をsource of truthとしてpure gateからnative gateへ進みます。
+- 既存`.ai`の限定変更は元ファイルをsource of truthとし、`inspect -> plan -> apply（別出力）-> validate -> diff`で確認します。
+
+production reportの`passed`だけがnative検証とvisual acceptanceまで完了した状態です。`awaiting-visual-acceptance`はpreview確認待ちのhandoffであり、`pending`、`failed`、`unavailable`、`not-run`のgateを成功扱いしません。pure gateの`passed`もIllustrator実機gateの代わりにはなりません。
 
 ## Examples
 
