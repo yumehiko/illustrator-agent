@@ -19,10 +19,12 @@ from .production_contract import (
     ProductionArtboard,
     ProductionContract,
     ProductionLinkedImage,
+)
+from .production_dom import illustrator_contract_checks
+from .production_verification import (
     evaluate_reference_document,
     verify_reference_document,
 )
-from .production_dom import illustrator_contract_checks
 
 __all__ = [
     "ArtboardVariantContract",
