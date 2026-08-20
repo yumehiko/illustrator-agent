@@ -9,6 +9,7 @@ from typing import Any
 from py_ai_illustrator.model import Document
 from py_ai_illustrator.semantic import semantic_diff
 
+from .layer1_compatibility import require_layer1_compatibility
 from .production_contract import DocumentFactory, ProductionContract
 from .production_evidence import document_evidence, verified_layout_signatures
 
@@ -132,6 +133,7 @@ def evaluate_reference_document(
 ) -> tuple[Document, dict[str, Any]]:
     """Build a Document and return it with the complete pure-gate report."""
 
+    layer1 = require_layer1_compatibility()
     document = build_document()
     repeated = build_document()
     source_determinism = semantic_diff(document, repeated)
@@ -151,6 +153,7 @@ def evaluate_reference_document(
         "source_determinism": source_determinism.to_dict(),
         "ir_json_roundtrip": ir_roundtrip.to_dict(),
         "text_layout": dict(text_layout_report) if text_layout_report is not None else None,
+        "layer1": layer1.to_dict(),
     }
 
 

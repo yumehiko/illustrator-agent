@@ -16,19 +16,23 @@ Python component + input data
 
 ## セットアップ
 
-このリポジトリと`py-ai-illustrator`を同じ親ディレクトリに置きます。
-
-```text
-repository/
-├── illustrator-agent/
-└── py-ai-illustrator/
+```bash
+uv sync --extra dev --locked
+uv run --locked pytest
+uv run --locked ruff check .
 ```
+
+`[project.dependencies]`は公開package metadata上のversion要件、uv専用の`[tool.uv.sources]`は検証済み`py-ai-illustrator` commitの取得元、`uv.lock`はその解決済みcommitと推移依存を固定します。versionはpre-1.0中に同じ値を取り得るため、単独では互換性の正本にしません。現時点の`--no-sources`は未公開packageだけをversionから取得しようとするため、fresh checkoutの経路には使いません。production gateはインストール元、commit、versionを照合し、不明または不一致なら停止します。
+
+第1層を同時開発するときだけ、同じ親ディレクトリの兄弟checkoutを固定commitへ合わせてからeditable installへ差し替えます。`uv run`の自動syncはlocked sourceへ戻すため、この間は`--no-sync`を付けます。checkoutに未commitの変更がある状態ではproduction gateは通りません。
 
 ```bash
-uv sync --extra dev
-uv run pytest
-uv run ruff check .
+git -C ../py-ai-illustrator checkout 322b97d2ababc2feb4dd64b6a453885596e74da6
+uv pip install --python .venv/bin/python --editable ../py-ai-illustrator
+uv run --no-sync pytest
 ```
+
+検証commitを更新するときは、公開API互換性testを通したうえで`[tool.uv.sources]`の`rev`と`layer1_compatibility.py`の`LAYER1_COMMIT`を同時に更新し、`uv lock`を実行します。
 
 設計と完成条件は[design model](docs/design-model.md)、未完了作業は[roadmap](docs/roadmap.md)を参照してください。
 
