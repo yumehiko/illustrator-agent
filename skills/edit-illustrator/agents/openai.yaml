@@ -1,4 +1,0 @@
-interface:
-  display_name: "Edit Illustrator"
-  short_description: "Create and revise editable Illustrator artwork"
-  default_prompt: "Use $edit-illustrator to create or revise editable Illustrator artwork from a clear design brief."
