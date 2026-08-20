@@ -24,7 +24,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-py-ai-illustrator = { git = "https://github.com/yumehiko/py-ai-illustrator.git", rev = "322b97d2ababc2feb4dd64b6a453885596e74da6" }
+py-ai-illustrator = { git = "https://github.com/yumehiko/py-ai-illustrator.git", rev = "58529ffb08f69ea98488dc0c23adc438621aae4c" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/illustrator_agent"]

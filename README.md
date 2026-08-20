@@ -27,7 +27,7 @@ uv run --locked ruff check .
 第1層を同時開発するときだけ、同じ親ディレクトリの兄弟checkoutを固定commitへ合わせてからeditable installへ差し替えます。`uv run`の自動syncはlocked sourceへ戻すため、この間は`--no-sync`を付けます。checkoutに未commitの変更がある状態ではproduction gateは通りません。
 
 ```bash
-git -C ../py-ai-illustrator checkout 322b97d2ababc2feb4dd64b6a453885596e74da6
+git -C ../py-ai-illustrator checkout 58529ffb08f69ea98488dc0c23adc438621aae4c
 uv pip install --python .venv/bin/python --editable ../py-ai-illustrator
 uv run --no-sync pytest
 ```
@@ -64,7 +64,7 @@ uv sync --locked
 Illustratorを使わないpure gateまでは、Illustrator未導入でも実行できます。
 
 - 新規制作・variant・大幅な再設計は、Python source、検証済み入力、`ProductionContract`をsource of truthとしてpure gateからnative gateへ進みます。
-- 既存`.ai`の限定変更は元ファイルをsource of truthとし、`inspect -> plan -> apply（別出力）-> validate -> diff`で確認します。
+- 既存`.ai`の限定変更は元ファイルをsource of truthとします。通常はsource-preservingな`inspect -> plan -> apply（別出力）-> validate -> diff`を使い、pure profileでselectorを証明できないlive text/linkは自動fallbackせず、ライセンス済みIllustratorを必要とする明示的なnative local-edit routeで確認します。
 
 production reportの`passed`だけがnative検証とvisual acceptanceまで完了した状態です。`awaiting-visual-acceptance`はpreview確認待ちのhandoffであり、`pending`、`failed`、`unavailable`、`not-run`のgateを成功扱いしません。pure gateの`passed`もIllustrator実機gateの代わりにはなりません。
 
