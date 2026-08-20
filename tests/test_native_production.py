@@ -46,10 +46,25 @@ def _fake_font_catalog(**_: object) -> dict:
     }
 
 
+def _fake_inspection(source: str | Path, **_: object) -> dict:
+    return {
+        "status": "passed",
+        "input": str(source),
+        "checks": {"linked_files_exist": True},
+        "illustrator": {
+            "ok": True,
+            "placed_images": [],
+            "text_frames": [],
+            "artboards": [{"name": "Artboard 1", "rect": [0, 420, 612, 0]}],
+        },
+    }
+
+
 def test_production_uses_direct_native_compile_and_preview(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(production, "compile_native_ai", _fake_native_compile)
+    monkeypatch.setattr(production, "run_illustrator_test", _fake_inspection)
     monkeypatch.setattr(production, "render_preview", _fake_preview)
     report_input = load_report_input()
 
@@ -73,6 +88,7 @@ def test_production_refuses_to_overwrite_artifacts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(production, "compile_native_ai", _fake_native_compile)
+    monkeypatch.setattr(production, "run_illustrator_test", _fake_inspection)
     monkeypatch.setattr(production, "render_preview", _fake_preview)
     report_input = load_report_input()
     arguments = {
@@ -93,6 +109,7 @@ def test_japanese_production_requires_font_catalog_and_verified_layout(
     monkeypatch.setattr(production, "compile_native_ai", _fake_native_compile)
     monkeypatch.setattr(production, "render_preview", _fake_preview)
     monkeypatch.setattr(production, "list_illustrator_fonts", _fake_font_catalog)
+    monkeypatch.setattr(production, "run_illustrator_test", _fake_inspection)
     schedule = load_schedule_input()
 
     report = production.compile_reference_production(
